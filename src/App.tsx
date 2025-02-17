@@ -37,14 +37,14 @@ function App() {
         const numberMatch = line.match(/^(\d+)[\.\-\s]?\s*(.+)$/);
         if (numberMatch) {
           const studentName = numberMatch[2].trim();
-          // Only add if student name is valid (not empty or just spaces)
-          if (studentName) {
+          // Only add if student name is valid (not empty, just spaces, or a dot)
+          if (studentName && studentName !== '.') {
             currentSchool.students.push(studentName);
             studentCounter++;
           }
         } else if (line.match(/^[•\-]\s*/)) {
           const studentName = line.replace(/^[•\-]\s*/, '').trim();
-          if (studentName) {
+          if (studentName && studentName !== '.') {
             currentSchool.students.push(studentName);
             studentCounter++;
           }
@@ -54,11 +54,12 @@ function App() {
 
     // Remove students with no name (empty or undefined)
     for (const school of schools) {
-      school.students = school.students.filter(name => name.trim() !== '');
+      school.students = school.students.filter(name => name.trim() !== '' && name !== '.');
     }
 
     return schools;
   };
+
 
 
 
@@ -75,12 +76,13 @@ function App() {
       return;
     }
 
-    // Initialize available UNIFIP students
+    // Inicializa os alunos disponíveis da UNIFIP
     const unifipSchool = parsedSchools.find(s => s.name === 'UNIFIP');
     if (unifipSchool) {
       setAvailableUnifipStudents(unifipSchool.students);
     }
 
+    // Define a lista de escolas
     setSchools(parsedSchools);
     setFullList('');
   };
@@ -135,20 +137,25 @@ function App() {
       students
     };
 
+    // Remove selected schools from the available schools list
+    setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
+
     setBuses([...buses, newBus]);
     setNewBusSeats(0);
-    setSelectedSchools([]);
+    setSelectedSchools([]); // Clear selected schools after bus creation
   };
+
 
 
 
   const toggleSchool = (schoolName: string) => {
-    setSelectedSchools(prev =>
-      prev.includes(schoolName)
-        ? prev.filter(name => name !== schoolName)
-        : [...prev, schoolName]
-    );
+    // Verifica se a escola já foi selecionada
+    if (!selectedSchools.includes(schoolName)) {
+      // Se não estiver selecionada, a adiciona à lista de selecionadas
+      setSelectedSchools(prev => [...prev, schoolName]);
+    }
   };
+
 
   const copyBusList = (bus: BusType) => {
     const text = `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')
@@ -171,6 +178,20 @@ function App() {
     });
   };
 
+  const deleteStudentFromBus = (busId: number, studentIndex: number) => {
+    // Encontra o ônibus
+    const busToUpdate = buses.find(bus => bus.id === busId);
+    if (busToUpdate) {
+      // Remove o aluno da lista de estudantes do ônibus
+      const updatedStudents = busToUpdate.students.filter((_, index) => index !== studentIndex);
+
+      // Atualiza o ônibus com a lista de estudantes atualizada
+      const updatedBus = { ...busToUpdate, students: updatedStudents };
+      setBuses(prevBuses => prevBuses.map(bus => (bus.id === busId ? updatedBus : bus)));
+    }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -184,8 +205,8 @@ function App() {
           <button
             onClick={() => setView('input')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md ${view === 'input'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
           >
             <SchoolIcon className="w-5 h-5" />
@@ -194,8 +215,8 @@ function App() {
           <button
             onClick={() => setView('management')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md ${view === 'management'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
           >
             <List className="w-5 h-5" />
@@ -342,6 +363,13 @@ function App() {
                         <span>{index + 1}.</span>
                         <span>{student.name}</span>
                         <span className="text-gray-500">({student.school})</span>
+                        <button
+                          onClick={() => deleteStudentFromBus(bus.id, index)}
+                          className="text-red-500 hover:text-red-700 ml-2"
+                          title="Excluir aluno"
+                        >
+                          Excluir
+                        </button>
                       </li>
                     ))}
                   </ul>
