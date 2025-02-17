@@ -71,7 +71,7 @@ function App() {
 
     const parsedSchools = parseSchoolList(fullList);
     if (parsedSchools.length === 0) {
-      alert('Nenhuma escola encontrada na lista');
+      alert('Nenhuma universidade foi encontrada na lista');
       return;
     }
 
@@ -229,7 +229,7 @@ function App() {
 
             {schools.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Escolas Processadas</h3>
+                <h3 className="text-lg font-semibold mb-4">Universidades processadas</h3>
                 <div className="space-y-4">
                   {schools.map(school => (
                     <div key={school.name} className="border rounded-md p-4">
@@ -266,7 +266,7 @@ function App() {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Selecione as Escolas
+                  Selecione as universidades
                 </label>
                 <div className="space-y-2">
                   {schools.map(school => (
