@@ -13,6 +13,7 @@ function App() {
   const [availableUnifipStudents, setAvailableUnifipStudents] = useState<string[]>([]);
   const [copiedBusId, setCopiedBusId] = useState<number | null>(null);
   const [driverName, setDriverName] = useState('');
+  const [selectedDriver, setSelectedDriver] = useState('');
 
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -223,6 +224,18 @@ function App() {
     }
   };
 
+  const handleDriverChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setSelectedDriver(value);
+
+    // Se "Outro" for selecionado, permite digitar o nome do motorista
+    if (value !== 'Outro') {
+      setDriverName(value); // Atribui o valor selecionado ao driverName
+    } else {
+      setDriverName(''); // Limpa o nome do motorista caso "Outro" seja selecionado
+    }
+  };
+
 
 
   return (
@@ -317,16 +330,36 @@ function App() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome do Motorista
-                </label>
-                <input
-                  type="text"
-                  value={driverName}
-                  onChange={(e) => setDriverName(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Nome do Motorista
+      </label>
+
+      {/* Lista de seleção para escolher o motorista */}
+      <select
+        value={selectedDriver}
+        onChange={handleDriverChange}
+        className="w-full p-2 border rounded-md"
+      >
+        <option value="">Selecione um Motorista</option>
+        <option value="França">França</option>
+        <option value="Bamba">Bamba</option>
+        <option value="Baiano">Baiano</option>
+        <option value="Francivaldo">Francivaldo</option>
+        <option value="Henrique">Henrique</option>
+        <option value="Outro">Outro</option>
+      </select>
+
+      {/* Exibe o campo de digitação caso a opção "Outro" seja escolhida */}
+      {selectedDriver === 'Outro' && (
+        <input
+          type="text"
+          value={driverName}
+          onChange={(e) => setDriverName(e.target.value)}
+          className="w-full mt-2 p-2 border rounded-md"
+          placeholder="Digite o nome do motorista"
+        />
+      )}
+    </div>
 
 
 
