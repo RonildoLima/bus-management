@@ -137,12 +137,15 @@ function App() {
   const toggleSchool = (schoolName: string) => {
     // Verifica se a escola "UNIFIP" está na lista de selecionadas
     if (schoolName === 'UNIFIP') {
-      return;  // Não permite que UNIFIP seja manualmente selecionada
+      return;  // Não permite que UNIFIP seja manualmente selecionada ou desmarcada
     }
   
     // Verifica se a escola já foi selecionada
-    if (!selectedSchools.includes(schoolName)) {
-      // Se não estiver selecionada, a adiciona à lista de selecionadas
+    if (selectedSchools.includes(schoolName)) {
+      // Se estiver selecionada, desmarque-a (remova da lista)
+      setSelectedSchools(prev => prev.filter(school => school !== schoolName));
+    } else {
+      // Se não estiver selecionada, a adicione à lista de selecionadas
       setSelectedSchools(prev => [...prev, schoolName]);
     }
   };
