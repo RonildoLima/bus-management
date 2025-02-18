@@ -15,13 +15,12 @@ function App() {
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
     let currentSchool: School | null = null;
-    let studentCounter = 1;
-
+  
     const lines = text.split('\n').map(line => line.trim());
-
+  
     for (let line of lines) {
       if (!line) continue;
-
+  
       // Check if line starts with "LISTA" and is not the main title
       if (line.toUpperCase().startsWith('LISTA') && !line.includes('17/02')) {
         // Extract school name
@@ -31,39 +30,25 @@ function App() {
           students: []
         };
         schools.push(currentSchool);
-        studentCounter = 1;
       } else if (currentSchool) {
-        // Match both formats: "94. Name", " 94.Name", "130-Ana Julya Dantas", and "132 Cassiano Neto"
+        // Match both formats: "94. Name", "94.Name", "130-Ana Julya Dantas", and "132 Cassiano Neto"
         const numberMatch = line.match(/^(\d+)[\.\-\s]?\s*(.+)$/);
         if (numberMatch) {
-          const studentName = numberMatch[2].trim();
-          // Only add if student name is valid (not empty, just spaces, or a dot)
+          let studentName = numberMatch[2].trim();
           if (studentName && studentName !== '.') {
-            currentSchool.students.push(studentName);
-            studentCounter++;
+            // Remove the faculty name if it is inside parentheses or plain text
+            const cleanStudentName = studentName.replace(new RegExp(`\\s*\\(${currentSchool.name}\\)\\s*`, 'i'), '').trim();
+  
+            // Add the student if they are not already in the list for this school
+            currentSchool.students.push(cleanStudentName);
           }
-        } else if (line.match(/^[•\-]\s*/)) {
-          const studentName = line.replace(/^[•\-]\s*/, '').trim();
-          if (studentName && studentName !== '.') {
-            currentSchool.students.push(studentName);
-            studentCounter++;
-          }
-        }
+        } 
       }
     }
-
-    // Remove students with no name (empty or undefined)
-    for (const school of schools) {
-      school.students = school.students.filter(name => name.trim() !== '' && name !== '.');
-    }
-
+  
     return schools;
   };
-
-
-
-
-
+  
   const handleProcessList = () => {
     if (!fullList.trim()) {
       alert('Por favor, cole a lista completa');
@@ -149,12 +134,18 @@ function App() {
 
 
   const toggleSchool = (schoolName: string) => {
+    // Verifica se a escola "UNIFIP" está na lista de selecionadas
+    if (schoolName === 'UNIFIP') {
+      return;  // Não permite que UNIFIP seja manualmente selecionada
+    }
+  
     // Verifica se a escola já foi selecionada
     if (!selectedSchools.includes(schoolName)) {
       // Se não estiver selecionada, a adiciona à lista de selecionadas
       setSelectedSchools(prev => [...prev, schoolName]);
     }
   };
+  
 
 
   const copyBusList = (bus: BusType) => {
