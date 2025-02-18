@@ -17,14 +17,14 @@ function App() {
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
     let currentSchool: School | null = null;
-  
+
     const lines = text.split('\n').map(line => line.trim());
-  
+
     for (let line of lines) {
       if (!line) continue;
-  
+
       const cleanedLine = line.replace(/[*\-]/g, '').trim();
-  
+
       if (cleanedLine.toUpperCase().startsWith('LISTA') && !cleanedLine.includes('17/02')) {
         const schoolName = cleanedLine.replace(/^LISTA\s+/i, '').trim();
         currentSchool = {
@@ -39,7 +39,7 @@ function App() {
 
           // Verifica se a palavra "volta" está no nome do aluno (incluindo entre parênteses ou em qualquer outra parte do nome)
           if (
-            studentName.toLowerCase().includes('volta') || 
+            studentName.toLowerCase().includes('volta') ||
             /\(.*volta.*\)/i.test(studentName) ||
             /\bida\b/i.test(studentName) || // Garante que "ida" apareça como palavra inteira
             /\(.*ida.*\)/i.test(studentName) // Verifica se "ida" está entre parênteses
@@ -48,18 +48,18 @@ function App() {
             if (studentName.toLowerCase().includes('volta') || /\(.*volta.*\)/i.test(studentName)) {
               studentName += ' - VOLTA';
             }
-          
+
             // Adiciona " - IDA" se a palavra "ida" estiver no nome ou entre parênteses
             if (/\bida\b/i.test(studentName) || /\(.*ida.*\)/i.test(studentName)) {
               studentName += ' - IDA';
             }
           }
-          
-          
-  
+
+
+
           // Remove o nome da faculdade (UNIFIP) do nome do aluno
           studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip|UFCG|ifpb|rhema|laboratório-uniplan|cursinho guedes\/conexão saúde|itec|uepb|uniplan|ecisa|unopar|uninaselvi)\s*/gi, '').trim();
-  
+
           // Separar o nome, sobrenome e a instituição (caso seja o nome da instituição no formato "(UFCG)" ou similar)
           const institutionMatch = studentName.match(/\(([^)]+)\)$/);
           if (institutionMatch) {
@@ -69,55 +69,52 @@ function App() {
               studentName += ` (${institution})`;
             }
           }
-  
+
           if (studentName && studentName !== '.') {
             currentSchool.students.push(studentName);
           }
         }
       }
     }
-  
+
     return schools;
   };
-  
-  
-  
+
+
+
   const handleProcessList = () => {
     if (!fullList.trim()) {
       alert('Por favor, cole a lista completa');
       return;
     }
-  
+
     const parsedSchools = parseSchoolList(fullList);
     if (parsedSchools.length === 0) {
       alert('Nenhuma universidade foi encontrada na lista');
       return;
     }
-  
+
     // Inicializa os alunos disponíveis da UNIFIP
     const unifipSchool = parsedSchools.find(s => s.name === 'UNIFIP');
     if (unifipSchool && unifipSchool.students.length > 0) {
       setAvailableUnifipStudents(unifipSchool.students);
     }
-  
+
     // Filtra as escolas para que apenas aquelas com alunos sejam exibidas
     const filteredSchools = parsedSchools.filter(s => s.students.length > 0);
     setSchools(filteredSchools);
     setFullList('');
   };
-  
+
 
   const createBus = () => {
     if (newBusSeats <= 0) {
       alert('Por favor, insira um número válido de assentos');
       return;
     }
-  
-    // Console log para verificar o valor do nome do motorista
-    console.log("Nome do Motorista:", driverName); // Adicione isso para ver o valor de driverName
-  
+
     let students: Student[] = [];
-  
+
     // Add students from selected schools
     selectedSchools.forEach(schoolName => {
       const school = schools.find(s => s.name === schoolName);
@@ -128,7 +125,7 @@ function App() {
         }))];
       }
     });
-  
+
     // Fill remaining seats with available UNIFIP students if needed
     if (students.length < newBusSeats && availableUnifipStudents.length > 0) {
       const remainingSeats = newBusSeats - students.length;
@@ -138,20 +135,20 @@ function App() {
           name,
           school: 'UNIFIP'
         }));
-  
+
       students = [...students, ...unifipStudentsToAdd];
-  
+
       // Update available UNIFIP students
       setAvailableUnifipStudents(prev =>
         prev.slice(unifipStudentsToAdd.length)
       );
     }
-  
+
     // Create the bus name based on selected schools and driver name
-    const busName = `${driverName ? `${driverName} - ` : ''}ÔNIBUS ${String(buses.length + 1).padStart(2, '0')} - ${selectedSchools.length > 0
+    const busName = `${driverName ? `${driverName.toUpperCase()} - ` : ''}ÔNIBUS ${String(buses.length + 1).padStart(2, '0')} - ${selectedSchools.length > 0
       ? selectedSchools.join(', ')
       : 'UNIFIP'} (${newBusSeats} VAGAS)`;
-  
+
     const newBus: BusType = {
       id: buses.length + 1,
       name: busName,  // Updated bus name to include driver name
@@ -159,16 +156,20 @@ function App() {
       schools: selectedSchools.length > 0 ? selectedSchools : ['UNIFIP'],  // Ensure UNIFIP is set if no schools are selected
       students
     };
-  
+
     // Remove selected schools from the available schools list
     setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
-  
+
     setBuses([...buses, newBus]);
     setNewBusSeats(0);
     setSelectedSchools([]); // Clear selected schools after bus creation
-    setDriverName(''); // Clear driver name after bus creation
+
+    // Clear driver name after bus creation to avoid repetition
+    setDriverName('');
   };
-  
+
+
+
 
 
 
@@ -178,7 +179,7 @@ function App() {
     if (schoolName === 'UNIFIP') {
       return;  // Não permite que UNIFIP seja manualmente selecionada ou desmarcada
     }
-  
+
     // Verifica se a escola já foi selecionada
     if (selectedSchools.includes(schoolName)) {
       // Se estiver selecionada, desmarque-a (remova da lista)
@@ -188,21 +189,21 @@ function App() {
       setSelectedSchools(prev => [...prev, schoolName]);
     }
   };
-  
+
 
 
   const copyBusList = (bus: BusType) => {
     const text = `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`;
-  
+
     navigator.clipboard.writeText(text).then(() => {
       setCopiedBusId(bus.id);
       setTimeout(() => setCopiedBusId(null), 2000);
     });
-  };  
+  };
 
   const copyAllBusLists = () => {
     const text = buses.map(bus => `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`).join('\n\n');
-  
+
     navigator.clipboard.writeText(text).then(() => {
       setCopiedBusId(null);
       setTimeout(() => setCopiedBusId(null), 2000);
@@ -316,16 +317,16 @@ function App() {
               </div>
 
               <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Nome do Motorista
-  </label>
-  <input
-    type="text"
-    value={driverName}
-    onChange={(e) => setDriverName(e.target.value)}
-    className="w-full p-2 border rounded-md"
-  />
-</div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome do Motorista
+                </label>
+                <input
+                  type="text"
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                />
+              </div>
 
 
 
@@ -383,48 +384,41 @@ function App() {
               </div>
             </div>
             <div className="space-y-6">
-              {buses.map(bus => (
-                <div key={bus.id} className="bg-white rounded-lg shadow-md p-6">
-                  <div className="flex justify-between items-start mb-4">
-                  {buses.map(bus => (
-  <div key={bus.id}>
-    <h3>{bus.name}</h3> {/* Aqui estamos exibindo o nome do ônibus */}
-  </div>
-))}
-
-                    <button
-                      onClick={() => copyBusList(bus)}
-                      className="text-gray-500 hover:text-gray-700 p-2"
-                      title="Copiar lista"
-                    >
-                      {copiedBusId === bus.id ? (
-                        <Check className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <Copy className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                  <ul className="space-y-2">
-                    {bus.students.map((student, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <span>{index + 1}.</span>
-                        <span>{student.name}</span>
-                        <span className="text-gray-500">({student.school})</span>
-                        <button
-                          onClick={() => deleteStudentFromBus(bus.id, index)}
-                          className="text-red-500 hover:text-red-700 ml-2"
-                          title="Excluir aluno"
-                        >
-                          Excluir
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-
+  {buses.map(bus => (  // Este é o único 'map' necessário
+    <div key={bus.id} className="bg-white rounded-lg shadow-md p-6">
+      <div className="flex justify-between items-start mb-4">
+        <h3>{bus.name}</h3> {/* Aqui estamos exibindo o nome do ônibus */}
+        <button
+          onClick={() => copyBusList(bus)}
+          className="text-gray-500 hover:text-gray-700 p-2"
+          title="Copiar lista"
+        >
+          {copiedBusId === bus.id ? (
+            <Check className="w-5 h-5 text-green-500" />
+          ) : (
+            <Copy className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+      <ul className="space-y-2">
+        {bus.students.map((student, index) => (
+          <li key={index} className="flex items-center gap-2">
+            <span>{index + 1}.</span>
+            <span>{student.name}</span>
+            <span className="text-gray-500">({student.school})</span>
+            <button
+              onClick={() => deleteStudentFromBus(bus.id, index)}
+              className="text-red-500 hover:text-red-700 ml-2"
+              title="Excluir aluno"
+            >
+              Excluir
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</div>
 
           </>
         )}
