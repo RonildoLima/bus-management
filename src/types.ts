@@ -10,6 +10,7 @@ export interface Student {
 
 export interface Bus {
   id: number;
+  name: string; // A propriedade 'name' já está correta
   seats: number;
   schools: string[];
   students: Student[];

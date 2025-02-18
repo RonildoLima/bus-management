@@ -12,6 +12,7 @@ function App() {
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
   const [availableUnifipStudents, setAvailableUnifipStudents] = useState<string[]>([]);
   const [copiedBusId, setCopiedBusId] = useState<number | null>(null);
+  const [driverName, setDriverName] = useState('');
 
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -111,9 +112,12 @@ function App() {
       alert('Por favor, insira um número válido de assentos');
       return;
     }
-
+  
+    // Console log para verificar o valor do nome do motorista
+    console.log("Nome do Motorista:", driverName); // Adicione isso para ver o valor de driverName
+  
     let students: Student[] = [];
-
+  
     // Add students from selected schools
     selectedSchools.forEach(schoolName => {
       const school = schools.find(s => s.name === schoolName);
@@ -124,7 +128,7 @@ function App() {
         }))];
       }
     });
-
+  
     // Fill remaining seats with available UNIFIP students if needed
     if (students.length < newBusSeats && availableUnifipStudents.length > 0) {
       const remainingSeats = newBusSeats - students.length;
@@ -134,35 +138,37 @@ function App() {
           name,
           school: 'UNIFIP'
         }));
-
+  
       students = [...students, ...unifipStudentsToAdd];
-
+  
       // Update available UNIFIP students
       setAvailableUnifipStudents(prev =>
         prev.slice(unifipStudentsToAdd.length)
       );
     }
-
-    // Create the bus name based on selected schools
-    const busName = selectedSchools.length > 0
-      ? `Bus - ${selectedSchools.join(', ')}`
-      : 'Bus - UNIFIP';  // Default to "UNIFIP" if no school is selected
-
+  
+    // Create the bus name based on selected schools and driver name
+    const busName = `${driverName ? `${driverName} - ` : ''}ÔNIBUS ${String(buses.length + 1).padStart(2, '0')} - ${selectedSchools.length > 0
+      ? selectedSchools.join(', ')
+      : 'UNIFIP'} (${newBusSeats} VAGAS)`;
+  
     const newBus: BusType = {
       id: buses.length + 1,
-      name: busName,  // Assigning the new bus name with selected schools or "UNIFIP"
+      name: busName,  // Updated bus name to include driver name
       seats: newBusSeats,
       schools: selectedSchools.length > 0 ? selectedSchools : ['UNIFIP'],  // Ensure UNIFIP is set if no schools are selected
       students
     };
-
+  
     // Remove selected schools from the available schools list
     setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
-
+  
     setBuses([...buses, newBus]);
     setNewBusSeats(0);
     setSelectedSchools([]); // Clear selected schools after bus creation
+    setDriverName(''); // Clear driver name after bus creation
   };
+  
 
 
 
@@ -186,21 +192,18 @@ function App() {
 
 
   const copyBusList = (bus: BusType) => {
-    const text = `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')
-      }`;
-
+    const text = `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`;
+  
     navigator.clipboard.writeText(text).then(() => {
       setCopiedBusId(bus.id);
       setTimeout(() => setCopiedBusId(null), 2000);
     });
-  };
+  };  
 
   const copyAllBusLists = () => {
-    const text = buses.map(bus => `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')
-      }`).join('\n\n');  // Adiciona um separador entre cada ônibus
-
+    const text = buses.map(bus => `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`).join('\n\n');
+  
     navigator.clipboard.writeText(text).then(() => {
-      // Optionally, you can show some feedback (e.g., a notification) that everything was copied
       setCopiedBusId(null);
       setTimeout(() => setCopiedBusId(null), 2000);
     });
@@ -312,6 +315,19 @@ function App() {
                 />
               </div>
 
+              <div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Nome do Motorista
+  </label>
+  <input
+    type="text"
+    value={driverName}
+    onChange={(e) => setDriverName(e.target.value)}
+    className="w-full p-2 border rounded-md"
+  />
+</div>
+
+
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -370,9 +386,12 @@ function App() {
               {buses.map(bus => (
                 <div key={bus.id} className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-semibold">
-                      LISTA ÔNIBUS {String(bus.id).padStart(2, '0')} - {bus.schools.join(', ')} ({bus.seats} VAGAS)
-                    </h2>
+                  {buses.map(bus => (
+  <div key={bus.id}>
+    <h3>{bus.name}</h3> {/* Aqui estamos exibindo o nome do ônibus */}
+  </div>
+))}
+
                     <button
                       onClick={() => copyBusList(bus)}
                       className="text-gray-500 hover:text-gray-700 p-2"
