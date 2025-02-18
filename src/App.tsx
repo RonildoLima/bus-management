@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import React, { useState } from 'react';
 import { PlusCircle, Bus, School as SchoolIcon, List, Copy, Check } from 'lucide-react';
 import { School, Student, Bus as BusType } from './types';
@@ -34,10 +35,25 @@ function App() {
         const numberMatch = cleanedLine.match(/^(\d+)[\.\-\s]?\s*(.+)$/);
         if (numberMatch) {
           let studentName = numberMatch[2].trim();
+
+          // Verifica se a palavra "volta" está no nome do aluno (incluindo entre parênteses ou em qualquer outra parte do nome)
+          if (studentName.toLowerCase().includes('volta') || /\(.*volta.*\)/i.test(studentName)) {
+            studentName += ' - VOLTA';
+          }
   
           // Remove o nome da faculdade (UNIFIP) do nome do aluno
           studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip|UFCG|ifpb|rhema|laboratório-uniplan|cursinho guedes\/conexão saúde|itec|uepb|uniplan|ecisa|unopar|uninaselvi)\s*/gi, '').trim();
-          
+  
+          // Separar o nome, sobrenome e a instituição (caso seja o nome da instituição no formato "(UFCG)" ou similar)
+          const institutionMatch = studentName.match(/\(([^)]+)\)$/);
+          if (institutionMatch) {
+            studentName = studentName.replace(/\s*\([^\)]*\)/, '').trim();  // Remove a instituição do nome
+            const institution = institutionMatch[1].trim();
+            if (institution) {
+              studentName += ` (${institution})`;
+            }
+          }
+  
           if (studentName && studentName !== '.') {
             currentSchool.students.push(studentName);
           }
@@ -47,6 +63,8 @@ function App() {
   
     return schools;
   };
+  
+  
   
   const handleProcessList = () => {
     if (!fullList.trim()) {
