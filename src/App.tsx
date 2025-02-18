@@ -37,9 +37,24 @@ function App() {
           let studentName = numberMatch[2].trim();
 
           // Verifica se a palavra "volta" está no nome do aluno (incluindo entre parênteses ou em qualquer outra parte do nome)
-          if (studentName.toLowerCase().includes('volta') || /\(.*volta.*\)/i.test(studentName)) {
-            studentName += ' - VOLTA';
+          if (
+            studentName.toLowerCase().includes('volta') || 
+            /\(.*volta.*\)/i.test(studentName) ||
+            /\bida\b/i.test(studentName) || // Garante que "ida" apareça como palavra inteira
+            /\(.*ida.*\)/i.test(studentName) // Verifica se "ida" está entre parênteses
+          ) {
+            // Adiciona " - VOLTA" se a palavra "volta" estiver no nome ou entre parênteses
+            if (studentName.toLowerCase().includes('volta') || /\(.*volta.*\)/i.test(studentName)) {
+              studentName += ' - VOLTA';
+            }
+          
+            // Adiciona " - IDA" se a palavra "ida" estiver no nome ou entre parênteses
+            if (/\bida\b/i.test(studentName) || /\(.*ida.*\)/i.test(studentName)) {
+              studentName += ' - IDA';
+            }
           }
+          
+          
   
           // Remove o nome da faculdade (UNIFIP) do nome do aluno
           studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip|UFCG|ifpb|rhema|laboratório-uniplan|cursinho guedes\/conexão saúde|itec|uepb|uniplan|ecisa|unopar|uninaselvi)\s*/gi, '').trim();
