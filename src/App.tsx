@@ -14,6 +14,7 @@ function App() {
   const [copiedBusId, setCopiedBusId] = useState<number | null>(null);
   const [driverName, setDriverName] = useState('');
   const [selectedDriver, setSelectedDriver] = useState('');
+  const [totalStudents, setTotalStudents] = useState<number>(0); // Para armazenar o total de alunos
 
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -88,24 +89,30 @@ function App() {
       alert('Por favor, cole a lista completa');
       return;
     }
-
+  
     const parsedSchools = parseSchoolList(fullList);
     if (parsedSchools.length === 0) {
       alert('Nenhuma universidade foi encontrada na lista');
       return;
     }
-
+  
     // Inicializa os alunos disponíveis da UNIFIP
     const unifipSchool = parsedSchools.find(s => s.name === 'UNIFIP');
     if (unifipSchool && unifipSchool.students.length > 0) {
       setAvailableUnifipStudents(unifipSchool.students);
     }
-
+  
     // Filtra as escolas para que apenas aquelas com alunos sejam exibidas
     const filteredSchools = parsedSchools.filter(s => s.students.length > 0);
+  
+    // Calcular o total de alunos em todas as escolas
+    const total = filteredSchools.reduce((acc, school) => acc + school.students.length, 0);
+    setTotalStudents(total); // Armazenar o total de alunos
+  
     setSchools(filteredSchools);
     setFullList('');
   };
+  
 
 
   const createBus = () => {
@@ -330,36 +337,36 @@ function App() {
               </div>
 
               <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Nome do Motorista
-      </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome do Motorista
+                </label>
 
-      {/* Lista de seleção para escolher o motorista */}
-      <select
-        value={selectedDriver}
-        onChange={handleDriverChange}
-        className="w-full p-2 border rounded-md"
-      >
-        <option value="">Selecione um Motorista</option>
-        <option value="França">França</option>
-        <option value="Bamba">Bamba</option>
-        <option value="Baiano">Baiano</option>
-        <option value="Francivaldo">Francivaldo</option>
-        <option value="Henrique">Henrique</option>
-        <option value="Outro">Outro</option>
-      </select>
+                {/* Lista de seleção para escolher o motorista */}
+                <select
+                  value={selectedDriver}
+                  onChange={handleDriverChange}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Selecione um Motorista</option>
+                  <option value="França">França</option>
+                  <option value="Bamba">Bamba</option>
+                  <option value="Baiano">Baiano</option>
+                  <option value="Francivaldo">Francivaldo</option>
+                  <option value="Henrique">Henrique</option>
+                  <option value="Outro">Outro</option>
+                </select>
 
-      {/* Exibe o campo de digitação caso a opção "Outro" seja escolhida */}
-      {selectedDriver === 'Outro' && (
-        <input
-          type="text"
-          value={driverName}
-          onChange={(e) => setDriverName(e.target.value)}
-          className="w-full mt-2 p-2 border rounded-md"
-          placeholder="Digite o nome do motorista"
-        />
-      )}
-    </div>
+                {/* Exibe o campo de digitação caso a opção "Outro" seja escolhida */}
+                {selectedDriver === 'Outro' && (
+                  <input
+                    type="text"
+                    value={driverName}
+                    onChange={(e) => setDriverName(e.target.value)}
+                    className="w-full mt-2 p-2 border rounded-md"
+                    placeholder="Digite o nome do motorista"
+                  />
+                )}
+              </div>
 
 
 
@@ -383,13 +390,22 @@ function App() {
               </div>
 
 
-              {availableUnifipStudents.length > 0 && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-600">
-                    Alunos UNIFIP disponíveis: {availableUnifipStudents.length}
-                  </p>
-                </div>
-              )}
+{availableUnifipStudents.length > 0 && (
+  <div className="mb-4 p-4 bg-gray-50 rounded-md">
+    <p className="text-sm text-gray-600">
+      Alunos UNIFIP disponíveis: {availableUnifipStudents.length}
+    </p>
+  </div>
+)}
+
+{totalStudents > 0 && (
+  <div className="mb-4 p-4 bg-gray-50 rounded-md">
+    <p className="text-sm text-gray-600">
+      Total de alunos: {totalStudents}
+    </p>
+  </div>
+)}
+
 
               <button
                 onClick={createBus}
@@ -417,41 +433,41 @@ function App() {
               </div>
             </div>
             <div className="space-y-6">
-  {buses.map(bus => (  // Este é o único 'map' necessário
-    <div key={bus.id} className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-start mb-4">
-        <h3>{bus.name}</h3> {/* Aqui estamos exibindo o nome do ônibus */}
-        <button
-          onClick={() => copyBusList(bus)}
-          className="text-gray-500 hover:text-gray-700 p-2"
-          title="Copiar lista"
-        >
-          {copiedBusId === bus.id ? (
-            <Check className="w-5 h-5 text-green-500" />
-          ) : (
-            <Copy className="w-5 h-5" />
-          )}
-        </button>
-      </div>
-      <ul className="space-y-2">
-        {bus.students.map((student, index) => (
-          <li key={index} className="flex items-center gap-2">
-            <span>{index + 1}.</span>
-            <span>{student.name}</span>
-            <span className="text-gray-500">({student.school})</span>
-            <button
-              onClick={() => deleteStudentFromBus(bus.id, index)}
-              className="text-red-500 hover:text-red-700 ml-2"
-              title="Excluir aluno"
-            >
-              Excluir
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  ))}
-</div>
+              {buses.map(bus => (  // Este é o único 'map' necessário
+                <div key={bus.id} className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3>{bus.name}</h3> {/* Aqui estamos exibindo o nome do ônibus */}
+                    <button
+                      onClick={() => copyBusList(bus)}
+                      className="text-gray-500 hover:text-gray-700 p-2"
+                      title="Copiar lista"
+                    >
+                      {copiedBusId === bus.id ? (
+                        <Check className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <Copy className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                  <ul className="space-y-2">
+                    {bus.students.map((student, index) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <span>{index + 1}.</span>
+                        <span>{student.name}</span>
+                        <span className="text-gray-500">({student.school})</span>
+                        <button
+                          onClick={() => deleteStudentFromBus(bus.id, index)}
+                          className="text-red-500 hover:text-red-700 ml-2"
+                          title="Excluir aluno"
+                        >
+                          Excluir
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
 
           </>
         )}
