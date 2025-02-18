@@ -21,28 +21,27 @@ function App() {
     for (let line of lines) {
       if (!line) continue;
   
-      // Check if line starts with "LISTA" and is not the main title
-      if (line.toUpperCase().startsWith('LISTA') && !line.includes('17/02')) {
-        // Extract school name
-        const schoolName = line.replace(/^LISTA\s+/i, '').trim();
+      const cleanedLine = line.replace(/[*\-]/g, '').trim();
+  
+      if (cleanedLine.toUpperCase().startsWith('LISTA') && !cleanedLine.includes('17/02')) {
+        const schoolName = cleanedLine.replace(/^LISTA\s+/i, '').trim();
         currentSchool = {
           name: schoolName,
           students: []
         };
         schools.push(currentSchool);
       } else if (currentSchool) {
-        // Match both formats: "94. Name", "94.Name", "130-Ana Julya Dantas", and "132 Cassiano Neto"
-        const numberMatch = line.match(/^(\d+)[\.\-\s]?\s*(.+)$/);
+        const numberMatch = cleanedLine.match(/^(\d+)[\.\-\s]?\s*(.+)$/);
         if (numberMatch) {
           let studentName = numberMatch[2].trim();
-          if (studentName && studentName !== '.') {
-            // Remove the faculty name if it is inside parentheses or plain text
-            const cleanStudentName = studentName.replace(new RegExp(`\\s*\\(${currentSchool.name}\\)\\s*`, 'i'), '').trim();
   
-            // Add the student if they are not already in the list for this school
-            currentSchool.students.push(cleanStudentName);
+          // Remove o nome da faculdade (UNIFIP) do nome do aluno
+          studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip)\s*/gi, '').trim();
+          
+          if (studentName && studentName !== '.') {
+            currentSchool.students.push(studentName);
           }
-        } 
+        }
       }
     }
   
@@ -54,23 +53,25 @@ function App() {
       alert('Por favor, cole a lista completa');
       return;
     }
-
+  
     const parsedSchools = parseSchoolList(fullList);
     if (parsedSchools.length === 0) {
       alert('Nenhuma universidade foi encontrada na lista');
       return;
     }
-
+  
     // Inicializa os alunos disponíveis da UNIFIP
     const unifipSchool = parsedSchools.find(s => s.name === 'UNIFIP');
-    if (unifipSchool) {
+    if (unifipSchool && unifipSchool.students.length > 0) {
       setAvailableUnifipStudents(unifipSchool.students);
     }
-
-    // Define a lista de escolas
-    setSchools(parsedSchools);
+  
+    // Filtra as escolas para que apenas aquelas com alunos sejam exibidas
+    const filteredSchools = parsedSchools.filter(s => s.students.length > 0);
+    setSchools(filteredSchools);
     setFullList('');
   };
+  
 
   const createBus = () => {
     if (newBusSeats <= 0) {
