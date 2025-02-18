@@ -36,7 +36,7 @@ function App() {
           let studentName = numberMatch[2].trim();
   
           // Remove o nome da faculdade (UNIFIP) do nome do aluno
-          studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip)\s*/gi, '').trim();
+          studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip|UFCG|ifpb|rhema|laboratório-uniplan|cursinho guedes\/conexão saúde|itec|uepb|uniplan|ecisa|unopar|uninaselvi)\s*/gi, '').trim();
           
           if (studentName && studentName !== '.') {
             currentSchool.students.push(studentName);
