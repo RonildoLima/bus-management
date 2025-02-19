@@ -16,6 +16,11 @@ function App() {
   const [selectedDriver, setSelectedDriver] = useState('');
   const [totalStudents, setTotalStudents] = useState<number>(0); // Para armazenar o total de alunos
   const [darkMode, setDarkMode] = useState(false);
+  const [isManualBusCreation, setIsManualBusCreation] = useState(false);
+  const [selectedUnifipStudents, setSelectedUnifipStudents] = useState<string[]>([]);
+  const [remainingSeats, setRemainingSeats] = useState<number>(0);
+
+
 
 
   const parseSchoolList = (text: string) => {
@@ -91,12 +96,6 @@ function App() {
 
     return schools;
   };
-
-
-
-
-
-
 
   const handleProcessList = () => {
     if (!fullList.trim()) {
@@ -190,12 +189,6 @@ function App() {
     setDriverName('');
   };
 
-
-
-
-
-
-
   const toggleSchool = (schoolName: string) => {
     // Verifica se a escola "UNIFIP" está na lista de selecionadas
     if (schoolName === 'UNIFIP') {
@@ -231,7 +224,7 @@ function App() {
       setCopiedBusId(null);
       setTimeout(() => setCopiedBusId(null), 2000);
     });
-};
+  };
 
 
   const deleteStudentFromBus = (busId: number, studentIndex: number) => {
@@ -258,6 +251,108 @@ function App() {
       setDriverName(''); // Limpa o nome do motorista caso "Outro" seja selecionado
     }
   };
+
+  const handleStudentSelection = (student: string) => {
+    // Verifica se o aluno está selecionado
+    if (selectedUnifipStudents.includes(student)) {
+      // Remove o aluno da lista de selecionados
+      setSelectedUnifipStudents(prev => prev.filter(s => s !== student));
+    } else {
+      // Se o número de alunos selecionados for menor que a quantidade de vagas restantes, adiciona o aluno
+      if (selectedUnifipStudents.length < remainingSeats) {
+        setSelectedUnifipStudents(prev => [...prev, student]);
+      } else {
+        alert('Você não pode selecionar mais alunos do que as vagas restantes.');
+      }
+    }
+  };
+
+
+  const createBusManually = () => {
+    if (newBusSeats <= 0) {
+      alert('Por favor, insira um número válido de assentos');
+      return;
+    }
+
+    if (selectedSchools.length === 0) {
+      alert('Por favor, selecione ao menos uma escola');
+      return;
+    }
+
+    let students: Student[] = [];
+
+    // Adiciona os alunos das escolas selecionadas
+    selectedSchools.forEach(schoolName => {
+      const school = schools.find(s => s.name === schoolName);
+      if (school) {
+        students = [...students, ...school.students.map(name => ({
+          name,
+          school: schoolName
+        }))];
+      }
+    });
+
+    // Calcula os assentos restantes
+    const remainingSeats = newBusSeats - students.length;
+
+    // Verifica se precisa preencher os assentos restantes com alunos da UNIFIP
+    if (remainingSeats > 0 && availableUnifipStudents.length > 0) {
+      setIsManualBusCreation(true);  // Habilita a tela/modal para selecionar alunos
+      setRemainingSeats(remainingSeats);  // Define remainingSeats no estado
+    }
+  };
+
+
+
+  const finalizeBusCreation = () => {
+    if (selectedUnifipStudents.length === remainingSeats) {
+      let students: Student[] = [];
+
+      // Adiciona os alunos das escolas selecionadas
+      selectedSchools.forEach(schoolName => {
+        const school = schools.find(s => s.name === schoolName);
+        if (school) {
+          students = [...students, ...school.students.map(name => ({
+            name,
+            school: schoolName
+          }))];
+        }
+      });
+
+      // Adiciona os alunos da UNIFIP selecionados
+      selectedUnifipStudents.forEach(studentName => {
+        students.push({
+          name: studentName,
+          school: 'UNIFIP'
+        });
+      });
+
+      // Cria o ônibus
+      const busName = `${driverName ? `${driverName.toUpperCase()} - ` : ''}ÔNIBUS ${String(buses.length + 1).padStart(2, '0')} - ${selectedSchools.length > 0
+        ? selectedSchools.join(', ')
+        : 'UNIFIP'} (${newBusSeats} VAGAS)`;
+
+      const newBus: BusType = {
+        id: buses.length + 1,
+        name: busName,
+        seats: newBusSeats,
+        schools: selectedSchools.length > 0 ? selectedSchools : ['UNIFIP'],
+        students
+      };
+
+      setBuses([...buses, newBus]);
+      setAvailableUnifipStudents(prev => prev.filter(student => !selectedUnifipStudents.includes(student)));
+      setNewBusSeats(0);
+      setSelectedSchools([]);  // Limpa as escolas selecionadas
+      setDriverName('');
+      setIsManualBusCreation(false);  // Fecha a tela/modal
+      setSelectedUnifipStudents([]);  // Limpa a seleção de alunos da UNIFIP
+    } else {
+      alert('Selecione o número correto de alunos da UNIFIP para preencher os assentos.');
+    }
+  };
+
+
 
 
 
@@ -424,15 +519,71 @@ function App() {
                   </p>
                 </div>
               )}
+              <div className="flex space-x-4">
+  <button
+    onClick={createBus}
+    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+  >
+    <PlusCircle className="w-5 h-5" />
+    Criar Ônibus
+  </button>
 
+  <button
+    onClick={createBusManually}
+    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+  >
+    <PlusCircle className="w-5 h-5" />
+    Criar Ônibus Manualmente
+  </button>
+</div>
 
-              <button
-                onClick={createBus}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-              >
-                <PlusCircle className="w-5 h-5" />
-                Criar Ônibus
-              </button>
+              {isManualBusCreation && remainingSeats > 0 && (
+                <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Selecione os alunos da UNIFIP para preencher os assentos restantes ({remainingSeats} vagas restantes)
+                    </h2>
+
+                    {/* Lista de alunos com scroll */}
+                    <div className="max-h-60 overflow-y-auto mb-6">  {/* Controla o tamanho e rolagem */}
+                      <ul className="space-y-3">
+                        {availableUnifipStudents.map((student, index) => (
+                          <li key={index} className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                id={`student-${index}`}
+                                checked={selectedUnifipStudents.includes(student)}
+                                onChange={() => handleStudentSelection(student)}
+                                className="mr-2"
+                                disabled={selectedUnifipStudents.length >= remainingSeats && !selectedUnifipStudents.includes(student)}  // Desabilita quando as vagas são preenchidas
+                              />
+                              <label htmlFor={`student-${index}`} className="text-sm">{student}</label>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Botões de ação */}
+                    <div className="flex justify-between space-x-4">
+                      <button
+                        onClick={finalizeBusCreation}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full md:w-auto"
+                      >
+                        Confirmar Seleção
+                      </button>
+                      <button
+                        onClick={() => setIsManualBusCreation(false)}
+                        className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 w-full md:w-auto"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
 
             <div className="space-y-6">
