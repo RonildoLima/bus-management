@@ -224,13 +224,15 @@ function App() {
   };
 
   const copyAllBusLists = () => {
-    const text = buses.map(bus => `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`).join('\n\n');
+    const date = new Date().toLocaleDateString('pt-BR'); // Formato "dd/mm"
+    const text = `LISTA ${date}\n\n` + buses.map(bus => `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`).join('\n\n');
 
     navigator.clipboard.writeText(text).then(() => {
       setCopiedBusId(null);
       setTimeout(() => setCopiedBusId(null), 2000);
     });
-  };
+};
+
 
   const deleteStudentFromBus = (busId: number, studentIndex: number) => {
     // Encontra o ônibus
