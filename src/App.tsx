@@ -21,14 +21,14 @@ function App() {
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
     let currentSchool: School | null = null;
-  
+
     const lines = text.split('\n').map(line => line.trim());
-  
+
     for (let line of lines) {
       if (!line) continue;
-  
+
       const cleanedLine = line.replace(/[*\-]/g, '').trim();
-  
+
       if (cleanedLine.toUpperCase().startsWith('LISTA') && !cleanedLine.includes('17/02')) {
         const schoolName = cleanedLine.replace(/^LISTA\s+/i, '').trim();
         currentSchool = {
@@ -40,38 +40,38 @@ function App() {
         const numberMatch = cleanedLine.match(/^(\d+)[\.\-\s]?\s*(.+)$/);
         if (numberMatch) {
           let studentName = numberMatch[2].trim();
-  
+
           // Ignorar se o nome estiver vazio ou se for um número isolado
           if (!studentName || studentName === '.' || !isNaN(Number(studentName))) {
             continue;
           }
-  
+
           // Remover qualquer sufixo "VOLTA" ou "IDA" que possa ter sido adicionado anteriormente
           studentName = studentName.replace(/\s*-\s*(VOLTA|IDA)\s*/gi, '').trim();
-  
+
           // Flag para verificar se os sufixos já foram adicionados
           let addedVolta = false;
           let addedIda = false;
-  
+
           // Verifica se "VOLTA" aparece no nome e adiciona ao final se não foi adicionado
           if (/\bvolta\b/i.test(studentName) && !addedVolta) {
             studentName = studentName.replace(/\bvolta\b/i, '').trim(); // Remove a palavra "volta" se estiver no nome
             studentName += ' - VOLTA';  // Adiciona o sufixo "VOLTA" ao final
             addedVolta = true;
           }
-  
+
           // Verifica e adiciona "IDA" uma única vez
           if (/\bida\b/i.test(studentName) && !addedIda) {
             studentName += ' - IDA';
             addedIda = true;
           }
-  
+
           // Corrige casos de "UNIFIP-VOLTA" ou similar
           studentName = studentName.replace(/([a-zA-Z]+)-VOLTA/i, '$1 - VOLTA');
-  
+
           // Remove o nome da faculdade (UNIFIP) do nome do aluno
           studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip|UFCG|ifpb|rhema|laboratório-uniplan|cursinho guedes\/conexão saúde|itec|uepb|uniplan|ecisa|unopar|uninaselvi)\s*/gi, '').trim();
-  
+
           // Separar o nome, sobrenome e a instituição (caso seja o nome da instituição no formato "(UFCG)" ou similar)
           const institutionMatch = studentName.match(/\(([^)]+)\)$/);
           if (institutionMatch) {
@@ -81,16 +81,16 @@ function App() {
               studentName += ` (${institution})`;
             }
           }
-  
+
           if (studentName && studentName !== '.') {
             currentSchool.students.push(studentName);
           }
         }
       }
     }
-  
+
     return schools;
-};
+  };
 
 
 
@@ -262,18 +262,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="flex justify-end mb-4">
-  <label htmlFor="theme-toggle" className="flex items-center cursor-pointer">
-    <span className="mr-2">Modo {darkMode ? 'Escuro' : 'Claro'}</span>
-    <input
-      type="checkbox"
-      id="theme-toggle"
-      checked={darkMode}
-      onChange={() => setDarkMode(!darkMode)}
-      className="toggle-checkbox"
-    />
-    <div className="toggle-label w-10 h-6 bg-gray-200 rounded-full"></div>
-  </label>
-</div>
+      </div>
 
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-2">
