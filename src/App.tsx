@@ -15,18 +15,20 @@ function App() {
   const [driverName, setDriverName] = useState('');
   const [selectedDriver, setSelectedDriver] = useState('');
   const [totalStudents, setTotalStudents] = useState<number>(0); // Para armazenar o total de alunos
+  const [darkMode, setDarkMode] = useState(false);
+
 
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
     let currentSchool: School | null = null;
-
+  
     const lines = text.split('\n').map(line => line.trim());
-
+  
     for (let line of lines) {
       if (!line) continue;
-
+  
       const cleanedLine = line.replace(/[*\-]/g, '').trim();
-
+  
       if (cleanedLine.toUpperCase().startsWith('LISTA') && !cleanedLine.includes('17/02')) {
         const schoolName = cleanedLine.replace(/^LISTA\s+/i, '').trim();
         currentSchool = {
@@ -38,30 +40,38 @@ function App() {
         const numberMatch = cleanedLine.match(/^(\d+)[\.\-\s]?\s*(.+)$/);
         if (numberMatch) {
           let studentName = numberMatch[2].trim();
-
-          // Verifica se a palavra "volta" está no nome do aluno (incluindo entre parênteses ou em qualquer outra parte do nome)
-          if (
-            studentName.toLowerCase().includes('volta') ||
-            /\(.*volta.*\)/i.test(studentName) ||
-            /\bida\b/i.test(studentName) || // Garante que "ida" apareça como palavra inteira
-            /\(.*ida.*\)/i.test(studentName) // Verifica se "ida" está entre parênteses
-          ) {
-            // Adiciona " - VOLTA" se a palavra "volta" estiver no nome ou entre parênteses
-            if (studentName.toLowerCase().includes('volta') || /\(.*volta.*\)/i.test(studentName)) {
-              studentName += ' - VOLTA';
-            }
-
-            // Adiciona " - IDA" se a palavra "ida" estiver no nome ou entre parênteses
-            if (/\bida\b/i.test(studentName) || /\(.*ida.*\)/i.test(studentName)) {
-              studentName += ' - IDA';
-            }
+  
+          // Ignorar se o nome estiver vazio ou se for um número isolado
+          if (!studentName || studentName === '.' || !isNaN(Number(studentName))) {
+            continue;
           }
-
-
-
+  
+          // Remover qualquer sufixo "VOLTA" ou "IDA" que possa ter sido adicionado anteriormente
+          studentName = studentName.replace(/\s*-\s*(VOLTA|IDA)\s*/gi, '').trim();
+  
+          // Flag para verificar se os sufixos já foram adicionados
+          let addedVolta = false;
+          let addedIda = false;
+  
+          // Verifica se "VOLTA" aparece no nome e adiciona ao final se não foi adicionado
+          if (/\bvolta\b/i.test(studentName) && !addedVolta) {
+            studentName = studentName.replace(/\bvolta\b/i, '').trim(); // Remove a palavra "volta" se estiver no nome
+            studentName += ' - VOLTA';  // Adiciona o sufixo "VOLTA" ao final
+            addedVolta = true;
+          }
+  
+          // Verifica e adiciona "IDA" uma única vez
+          if (/\bida\b/i.test(studentName) && !addedIda) {
+            studentName += ' - IDA';
+            addedIda = true;
+          }
+  
+          // Corrige casos de "UNIFIP-VOLTA" ou similar
+          studentName = studentName.replace(/([a-zA-Z]+)-VOLTA/i, '$1 - VOLTA');
+  
           // Remove o nome da faculdade (UNIFIP) do nome do aluno
           studentName = studentName.replace(/\s*(\([^\)]*\)|UNIFIP|unifip|UFCG|ifpb|rhema|laboratório-uniplan|cursinho guedes\/conexão saúde|itec|uepb|uniplan|ecisa|unopar|uninaselvi)\s*/gi, '').trim();
-
+  
           // Separar o nome, sobrenome e a instituição (caso seja o nome da instituição no formato "(UFCG)" ou similar)
           const institutionMatch = studentName.match(/\(([^)]+)\)$/);
           if (institutionMatch) {
@@ -71,16 +81,20 @@ function App() {
               studentName += ` (${institution})`;
             }
           }
-
+  
           if (studentName && studentName !== '.') {
             currentSchool.students.push(studentName);
           }
         }
       }
     }
-
+  
     return schools;
-  };
+};
+
+
+
+
 
 
 
@@ -89,30 +103,30 @@ function App() {
       alert('Por favor, cole a lista completa');
       return;
     }
-  
+
     const parsedSchools = parseSchoolList(fullList);
     if (parsedSchools.length === 0) {
       alert('Nenhuma universidade foi encontrada na lista');
       return;
     }
-  
+
     // Inicializa os alunos disponíveis da UNIFIP
     const unifipSchool = parsedSchools.find(s => s.name === 'UNIFIP');
     if (unifipSchool && unifipSchool.students.length > 0) {
       setAvailableUnifipStudents(unifipSchool.students);
     }
-  
+
     // Filtra as escolas para que apenas aquelas com alunos sejam exibidas
     const filteredSchools = parsedSchools.filter(s => s.students.length > 0);
-  
+
     // Calcular o total de alunos em todas as escolas
     const total = filteredSchools.reduce((acc, school) => acc + school.students.length, 0);
     setTotalStudents(total); // Armazenar o total de alunos
-  
+
     setSchools(filteredSchools);
     setFullList('');
   };
-  
+
 
 
   const createBus = () => {
@@ -247,6 +261,20 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
+      <div className="flex justify-end mb-4">
+  <label htmlFor="theme-toggle" className="flex items-center cursor-pointer">
+    <span className="mr-2">Modo {darkMode ? 'Escuro' : 'Claro'}</span>
+    <input
+      type="checkbox"
+      id="theme-toggle"
+      checked={darkMode}
+      onChange={() => setDarkMode(!darkMode)}
+      className="toggle-checkbox"
+    />
+    <div className="toggle-label w-10 h-6 bg-gray-200 rounded-full"></div>
+  </label>
+</div>
+
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-2">
           <Bus className="w-8 h-8" />
@@ -390,21 +418,21 @@ function App() {
               </div>
 
 
-{availableUnifipStudents.length > 0 && (
-  <div className="mb-4 p-4 bg-gray-50 rounded-md">
-    <p className="text-sm text-gray-600">
-      Alunos UNIFIP disponíveis: {availableUnifipStudents.length}
-    </p>
-  </div>
-)}
+              {availableUnifipStudents.length > 0 && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                  <p className="text-sm text-gray-600">
+                    Alunos UNIFIP disponíveis: {availableUnifipStudents.length}
+                  </p>
+                </div>
+              )}
 
-{totalStudents > 0 && (
-  <div className="mb-4 p-4 bg-gray-50 rounded-md">
-    <p className="text-sm text-gray-600">
-      Total de alunos: {totalStudents}
-    </p>
-  </div>
-)}
+              {totalStudents > 0 && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                  <p className="text-sm text-gray-600">
+                    Total de alunos: {totalStudents}
+                  </p>
+                </div>
+              )}
 
 
               <button
