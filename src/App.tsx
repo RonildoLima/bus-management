@@ -300,6 +300,8 @@ function App() {
       setIsManualBusCreation(true);  // Habilita a tela/modal para selecionar alunos
       setRemainingSeats(remainingSeats);  // Define remainingSeats no estado
     }
+
+    
   };
 
 
@@ -347,6 +349,10 @@ function App() {
       setDriverName('');
       setIsManualBusCreation(false);  // Fecha a tela/modal
       setSelectedUnifipStudents([]);  // Limpa a seleção de alunos da UNIFIP
+
+      // Remove as universidades selecionadas da lista de escolas disponíveis
+    setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
+    
     } else {
       alert('Selecione o número correto de alunos da UNIFIP para preencher os assentos.');
     }
