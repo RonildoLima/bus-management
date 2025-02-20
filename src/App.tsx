@@ -19,10 +19,7 @@ function App() {
   const [isManualBusCreation, setIsManualBusCreation] = useState(false);
   const [selectedUnifipStudents, setSelectedUnifipStudents] = useState<string[]>([]);
   const [remainingSeats, setRemainingSeats] = useState<number>(0);
-
-
-
-
+  
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
     let currentSchool: School | null = null;
@@ -102,29 +99,37 @@ function App() {
       alert('Por favor, cole a lista completa');
       return;
     }
-
+  
     const parsedSchools = parseSchoolList(fullList);
     if (parsedSchools.length === 0) {
       alert('Nenhuma universidade foi encontrada na lista');
       return;
     }
-
+  
     // Inicializa os alunos disponíveis da UNIFIP
     const unifipSchool = parsedSchools.find(s => s.name === 'UNIFIP');
     if (unifipSchool && unifipSchool.students.length > 0) {
       setAvailableUnifipStudents(unifipSchool.students);
     }
-
+  
     // Filtra as escolas para que apenas aquelas com alunos sejam exibidas
     const filteredSchools = parsedSchools.filter(s => s.students.length > 0);
-
+  
     // Calcular o total de alunos em todas as escolas
     const total = filteredSchools.reduce((acc, school) => acc + school.students.length, 0);
     setTotalStudents(total); // Armazenar o total de alunos
-
-    setSchools(filteredSchools);
+  
+    // Adiciona o total de alunos ao nome da escola para exibição
+    const schoolsWithStudentCount = filteredSchools.map(school => ({
+      name: school.name,  // Nome da escola sem o número de alunos
+      displayName: `${school.name} - ${school.students.length} alunos`, // Nome da escola com o número de alunos
+      students: school.students
+    }));
+  
+    setSchools(schoolsWithStudentCount);
     setFullList('');
   };
+  
 
 
 
@@ -191,19 +196,23 @@ function App() {
 
   const toggleSchool = (schoolName: string) => {
     // Verifica se a escola "UNIFIP" está na lista de selecionadas
-    if (schoolName === 'UNIFIP') {
+    if (schoolName.startsWith('UNIFIP')) {
       return;  // Não permite que UNIFIP seja manualmente selecionada ou desmarcada
     }
-
+  
+    // Extrai o nome da escola sem a quantidade de alunos
+    const schoolWithoutCount = schoolName.split(' - ')[0];
+  
     // Verifica se a escola já foi selecionada
-    if (selectedSchools.includes(schoolName)) {
+    if (selectedSchools.includes(schoolWithoutCount)) {
       // Se estiver selecionada, desmarque-a (remova da lista)
-      setSelectedSchools(prev => prev.filter(school => school !== schoolName));
+      setSelectedSchools(prev => prev.filter(school => school !== schoolWithoutCount));
     } else {
       // Se não estiver selecionada, a adicione à lista de selecionadas
-      setSelectedSchools(prev => [...prev, schoolName]);
+      setSelectedSchools(prev => [...prev, schoolWithoutCount]);
     }
   };
+  
 
 
 
@@ -273,12 +282,7 @@ function App() {
       alert('Por favor, insira um número válido de assentos');
       return;
     }
-
-    if (selectedSchools.length === 0) {
-      alert('Por favor, selecione ao menos uma escola');
-      return;
-    }
-
+    
     let students: Student[] = [];
 
     // Adiciona os alunos das escolas selecionadas
@@ -352,7 +356,7 @@ function App() {
 
       // Remove as universidades selecionadas da lista de escolas disponíveis
     setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
-    
+
     } else {
       alert('Selecione o número correto de alunos da UNIFIP para preencher os assentos.');
     }
@@ -491,23 +495,27 @@ function App() {
 
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Selecione as universidades
-                </label>
-                <div className="space-y-2">
-                  {schools.map(school => (
-                    <label key={school.name} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedSchools.includes(school.name)}
-                        onChange={() => toggleSchool(school.name)}
-                        className="rounded"
-                      />
-                      <span>{school.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Selecione as universidades
+  </label>
+  <div className="space-y-2">
+    {schools
+      .filter(school => school.name !== 'UNIFIP')  // Filtra para não incluir UNIFIP
+      .map(school => (
+        <label key={school.name} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={selectedSchools.includes(school.name)}
+            onChange={() => toggleSchool(school.name)}
+            className="rounded"
+          />
+          <span>{`${school.name} - ${school.students.length} alunos`}</span>
+        </label>
+      ))}
+  </div>
+</div>
+
+
 
 
               {availableUnifipStudents.length > 0 && (

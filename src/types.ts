@@ -1,6 +1,7 @@
 export interface School {
   name: string;
   students: string[];
+  displayName?: string;
 }
 
 export interface Student {
