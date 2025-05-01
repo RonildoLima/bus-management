@@ -28,6 +28,7 @@ export function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
               <h3 className="text-xl font-semibold text-gray-700 mb-3">OBSERVAÇÕES IMPORTANTES</h3>
               <ul className="list-disc list-inside space-y-2 text-gray-600">            
                 <li><strong>Esse sistema foi pensando e desenvolvido para o estilo de lista atual da rota PATOS NOITE, sendo possível seu uso por qualquer rota desde que sigam o padrão</strong></li>
+                <li><strong>O sistema faz a identificação da faculdade de forma automática, sem necessidade do aluno colocar a mesma após o seu nome</strong></li>
                 <li><strong>O sistema faz o cálculo total dos alunos da lista</strong></li>
                 <li><strong>O sistema faz o cálculo total dos alunos da UNIFIP de forma individualmente</strong></li>
                 OBS: Caso não tenham alunos UNIFIP, o sistema apenas irá ignorar
