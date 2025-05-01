@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { PlusCircle, Bus, School as SchoolIcon, List, Copy, Check } from 'lucide-react';
 import { School, Student, Bus as BusType } from './types';
+import { TutorialModal } from './components/TutorialModal';
 
 function App() {
   const [view, setView] = useState<'input' | 'management'>('input');
@@ -19,6 +20,7 @@ function App() {
   const [isManualBusCreation, setIsManualBusCreation] = useState(false);
   const [selectedUnifipStudents, setSelectedUnifipStudents] = useState<string[]>([]);
   const [remainingSeats, setRemainingSeats] = useState<number>(0);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -369,7 +371,18 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setIsTutorialOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Ajuda
+        </button>
       </div>
+
+      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
 
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-2">
