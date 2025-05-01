@@ -42,7 +42,7 @@ export function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                 <li><strong>O sistema faz o cálculo total dos alunos da UNIFIP de forma individualmente</strong></li>
                 OBS: Caso não tenham alunos UNIFIP, o sistema apenas irá ignorar
                 <li><strong>O sistema faz a remoção de espaços vazio entre alunos</strong></li>
-                <li><strong>O sistema faz a identificação dos alunos IDA e VOLTA de forma automática</strong></li>
+                <li><strong>O sistema faz a identificação dos alunos com IDA e VOLTA de forma automática</strong></li>
               </ul>
             </section>
 
