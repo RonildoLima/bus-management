@@ -406,7 +406,7 @@ function App() {
             onClick={() => setView('input')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md ${view === 'input'
               ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
+              : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
           >
             <SchoolIcon className="w-5 h-5" />
@@ -416,7 +416,7 @@ function App() {
             onClick={() => setView('management')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md ${view === 'management'
               ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
+              : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
           >
             <List className="w-5 h-5" />
