@@ -30,7 +30,7 @@ export function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                 <li><strong>Esse sistema foi pensando e desenvolvido para o estilo de lista atual da rota PATOS NOITE, sendo possível seu uso por qualquer rota desde que sigam o padrão</strong></li>
                 <button
                   className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2"
-                  onClick={() => alert(`LISTA 30/04\n\nLISTA UFM\n\n1. João Pedro UFM (VOLTA)\n2. Mariana Souza UFM (VOLTA)\n3. Carlos Alberto UFM\n4. Ana Clara UFM\n\nLISTA IFPB\n\n1. Bruno Silva IFPB\n2. Fernanda Oliveira IFPB\n3. José Ricardo IFPB\n4. Larissa Mendes IFPB\n\nLISTA RHEMA\n\n1. Gabriel Santos (Rhema)\n2. Laura Pereira (Rhema)\n3. Eduardo Lima (Rhema)`)}
+                  onClick={() => alert(`LISTA 30/04\n\nLISTA UFM\n\n1. João Pedro (VOLTA)\n2. Mariana Souza (IDA)\n3. Carlos Alberto UFM\n4. Ana Clara UFM\n\nLISTA IFPB\n\n1. Bruno Silva IFPB\n2. Fernanda Oliveira IFPB\n3. José Ricardo IFPB\n4. Larissa Mendes IFPB\n\nLISTA RHEMA\n\n1. Gabriel Santos\n2. Laura Pereira (Rhema)\n3. Eduardo Lima (Rhema)`)}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
