@@ -369,11 +369,22 @@ function App() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="flex justify-end mb-4">
+    <div className={`min-h-screen p-8 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+      <div className="flex justify-end mb-4 gap-4">
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Dark Mode</span>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full ${darkMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+          >
+            <span
+              className={`${darkMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition`}
+            />
+          </button>
+        </div>
         <button
           onClick={() => setIsTutorialOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+          className={`${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'} text-white px-4 py-2 rounded-md flex items-center gap-2`}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -382,15 +393,15 @@ function App() {
         </button>
       </div>
 
-      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
+      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} darkMode={darkMode} />
 
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-2">
+        <h1 className={`text-3xl font-bold mb-8 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
           <Bus className="w-8 h-8" />
           Sistema de Gerenciamento de Ônibus
         </h1>
 
-        <div className="flex gap-4 mb-8">
+        <div className={`flex gap-4 mb-8 ${darkMode ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-200'}`}>
           <button
             onClick={() => setView('input')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md ${view === 'input'
@@ -414,24 +425,24 @@ function App() {
         </div>
 
         {view === 'input' ? (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">Processar Lista Completa</h2>
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-8`}>
+            <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Copiar lista completa</h2>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 Lista Completa
               </label>
               <textarea
                 value={fullList}
                 onChange={(e) => setFullList(e.target.value)}
-                className="w-full p-2 border rounded-md h-96 font-mono"
+                className={`w-full p-2 border rounded-md h-96 font-mono ${darkMode ? 'bg-gray-800 text-gray-200 border-gray-700' : 'bg-white text-gray-900 border-gray-300'}`}
                 placeholder="Cole a lista completa aqui..."
               />
             </div>
 
             <button
               onClick={handleProcessList}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+              className={`${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'} text-white px-4 py-2 rounded-md flex items-center gap-2`}
             >
               <PlusCircle className="w-5 h-5" />
               Processar Lista
@@ -439,12 +450,12 @@ function App() {
 
             {schools.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Universidades processadas</h3>
+                <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Universidades processadas</h3>
                 <div className="space-y-4">
                   {schools.map(school => (
-                    <div key={school.name} className="border rounded-md p-4">
-                      <h4 className="font-medium mb-2">{school.name}</h4>
-                      <ul className="list-decimal list-inside text-gray-600">
+                    <div key={school.name} className={`border rounded-md p-4 ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+                      <h4 className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{school.name}</h4>
+                      <ul className={`list-decimal list-inside ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         {school.students.map((student, index) => (
                           <li key={index}>{student}</li>
                         ))}
@@ -457,24 +468,24 @@ function App() {
           </div>
         ) : (
           <>
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Criar Novo Ônibus</h2>
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-8`}>
+              <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Criar Novo Ônibus</h2>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Número de Assentos
                 </label>
                 <input
                   type="number"
                   value={newBusSeats || ''}
                   onChange={(e) => setNewBusSeats(parseInt(e.target.value) || 0)}
-                  className="w-full p-2 border rounded-md"
+                  className={`w-full p-2 border rounded-md ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
                   min="1"
                 />
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Nome do Motorista
                 </label>
 
@@ -482,7 +493,7 @@ function App() {
                 <select
                   value={selectedDriver}
                   onChange={handleDriverChange}
-                  className="w-full p-2 border rounded-md"
+                  className={`w-full p-2 border rounded-md ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
                 >
                   <option value="">Selecione um Motorista</option>
                   <option value="França">França</option>
@@ -499,7 +510,7 @@ function App() {
                     type="text"
                     value={driverName}
                     onChange={(e) => setDriverName(e.target.value)}
-                    className="w-full mt-2 p-2 border rounded-md"
+                    className={`w-full mt-2 p-2 border rounded-md ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
                     placeholder="Digite o nome do motorista"
                   />
                 )}
@@ -508,19 +519,19 @@ function App() {
 
 
               <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700 mb-2">
+  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
     Selecione as universidades
   </label>
   <div className="space-y-2">
     {schools
       .filter(school => school.name !== 'UNIFIP')  // Filtra para não incluir UNIFIP
       .map(school => (
-        <label key={school.name} className="flex items-center space-x-2">
+        <label key={school.name} className={`flex items-center space-x-2 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
           <input
             type="checkbox"
             checked={selectedSchools.includes(school.name)}
             onChange={() => toggleSchool(school.name)}
-            className="rounded"
+            className={`rounded ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
           />
           <span>{`${school.name} - ${school.students.length} alunos`}</span>
         </label>
@@ -532,16 +543,16 @@ function App() {
 
 
               {availableUnifipStudents.length > 0 && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-600">
+                <div className={`mb-4 p-4 rounded-md ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Alunos UNIFIP disponíveis: {availableUnifipStudents.length}
                   </p>
                 </div>
               )}
 
               {totalStudents > 0 && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-600">
+                <div className={`mb-4 p-4 rounded-md ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     Total de alunos: {totalStudents}
                   </p>
                 </div>
@@ -615,10 +626,10 @@ function App() {
 
             <div className="space-y-6">
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-semibold">Copiar lista completa</h2>
+                <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Copiar lista completa</h2>
                 <button
-                  onClick={copyAllBusLists} // Chama a função para copiar todos os ônibus
-                  className="text-gray-500 hover:text-gray-700 p-2"
+                  onClick={copyAllBusLists}
+                  className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'} p-2`}
                   title="Copiar todas as listas"
                 >
                   {copiedBusId === null ? (
@@ -630,13 +641,13 @@ function App() {
               </div>
             </div>
             <div className="space-y-6">
-              {buses.map(bus => (  // Este é o único 'map' necessário
-                <div key={bus.id} className="bg-white rounded-lg shadow-md p-6">
+              {buses.map(bus => (
+                <div key={bus.id} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
                   <div className="flex justify-between items-start mb-4">
-                    <h3>{bus.name}</h3> {/* Aqui estamos exibindo o nome do ônibus */}
+                    <h3 className={`${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>{bus.name}</h3>
                     <button
                       onClick={() => copyBusList(bus)}
-                      className="text-gray-500 hover:text-gray-700 p-2"
+                      className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'} p-2`}
                       title="Copiar lista"
                     >
                       {copiedBusId === bus.id ? (
@@ -648,10 +659,10 @@ function App() {
                   </div>
                   <ul className="space-y-2">
                     {bus.students.map((student, index) => (
-                      <li key={index} className="flex items-center gap-2">
+                      <li key={index} className={`flex items-center gap-2 ${darkMode ? 'text-gray-300' : 'text-gray-800'}`}>
                         <span>{index + 1}.</span>
                         <span>{student.name}</span>
-                        <span className="text-gray-500">({student.school})</span>
+                        <span className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>({student.school})</span>
                         <button
                           onClick={() => deleteStudentFromBus(bus.id, index)}
                           className="text-red-500 hover:text-red-700 ml-2"
