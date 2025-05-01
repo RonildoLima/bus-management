@@ -111,6 +111,15 @@ export function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                 <li>Copie as listas individualmente para gerenciamento ou exportação, ou copie a lista completa no formato pronto para uso</li>
                 <li>A lista estará pronta para ser usada ou compartilhada de acordo com suas necessidades</li>
               </ul>
+              <button
+                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2"
+                onClick={() => alert(`LISTA 30/04/2025\n\nLISTA ÔNIBUS 01 - Francisco - UFM (51 VAGAS)\n1. Gabriel Lima Santos (UFM)\n2. Luana Costa Pereira (UFM)\n3. Rafael Gomes Martins (UFM)\n4. Camila Souza Alves (UFM)\n\nLISTA ÔNIBUS 02 - Roberto - CONEXÃO e UNIFIP (44 VAGAS)\n1. Beatriz Almeida Silva (CONEXÃO)\n2. Samuel Souza Lima (CONEXÃO)\n3. Júlia Costa Pereira (CONEXÃO)\n4. Lucas Fernandes Silva (UNIFIP)\n\nLISTA ÔNIBUS 03 - José Carlos - IF (51 VAGAS)\n1. Eduardo Martins Lima (IF)\n2. Isabela Souza Ferreira (IF)\n3. Ricardo Costa Alves (IF)\n4. Mariana Lima Santos (IF)`)}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Ver Exemplo de Lista Final
+              </button>
             </section>
           </div>
         </div>
