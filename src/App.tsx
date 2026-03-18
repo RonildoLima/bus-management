@@ -681,7 +681,10 @@ function App() {
                     <div className="max-h-60 overflow-y-auto mb-6">  {/* Controla o tamanho e rolagem */}
                       <ul className="space-y-3">
                         {availableUnifipStudents
-                          .filter(student => student.toLowerCase().includes(unifipStudentSearch.toLowerCase()))
+                          .filter(student => {
+                            const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                            return normalize(student).includes(normalize(unifipStudentSearch));
+                          })
                           .map((student, index) => (
                           <li key={index} className="flex items-center justify-between">
                             <div className="flex items-center">
