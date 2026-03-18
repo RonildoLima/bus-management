@@ -989,9 +989,6 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                     </button>
                   </div>
                   <div className="flex gap-4 mt-1 text-sm">
-                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                      Total: <strong>{selectedChamadaBus.students.length}</strong>
-                    </span>
                     <span className="text-green-500 font-medium">
                       Presentes: <strong>{selectedChamadaBus.students.filter(s => s.status === 'present').length}</strong>
                     </span>
