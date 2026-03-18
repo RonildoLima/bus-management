@@ -25,13 +25,14 @@ function App() {
 
   // --- Estados da Chamada ---
   const [chamadaRawList, setChamadaRawList] = useState('');
-  interface ChamadaBus { id: number; name: string; students: { name: string; school: string; status: 'pending' | 'present' | 'absent' }[] }
+  interface ChamadaBus { id: number; name: string; students: { name: string; school: string; status: 'pending' | 'present' | 'absent' | 'volta' | 'relocated'; relocatedFrom?: string }[] }
   const [parsedChamadaBuses, setParsedChamadaBuses] = useState<ChamadaBus[]>([]);
   const [selectedChamadaBus, setSelectedChamadaBus] = useState<ChamadaBus | null>(null);
   const [chamadaCopied, setChamadaCopied] = useState(false);
   const [isChamadaHelpOpen, setIsChamadaHelpOpen] = useState(false);
   const [chamadaPopupIndex, setChamadaPopupIndex] = useState<number | null>(null);
-  
+  const [relocateModalIndex, setRelocateModalIndex] = useState<number | null>(null);
+
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
     let currentSchool: School | null = null;
@@ -111,37 +112,37 @@ function App() {
       alert('Por favor, cole a lista completa');
       return;
     }
-  
+
     const parsedSchools = parseSchoolList(fullList);
     if (parsedSchools.length === 0) {
       alert('Nenhuma universidade foi encontrada na lista');
       return;
     }
-  
+
     // Inicializa os alunos disponíveis da UNIFIP
     const unifipSchool = parsedSchools.find(s => s.name === 'UNIFIP');
     if (unifipSchool && unifipSchool.students.length > 0) {
       setAvailableUnifipStudents(unifipSchool.students);
     }
-  
+
     // Filtra as escolas para que apenas aquelas com alunos sejam exibidas
     const filteredSchools = parsedSchools.filter(s => s.students.length > 0);
-  
+
     // Calcular o total de alunos em todas as escolas
     const total = filteredSchools.reduce((acc, school) => acc + school.students.length, 0);
     setTotalStudents(total); // Armazenar o total de alunos
-  
+
     // Adiciona o total de alunos ao nome da escola para exibição
     const schoolsWithStudentCount = filteredSchools.map(school => ({
       name: school.name,  // Nome da escola sem o número de alunos
       displayName: `${school.name} - ${school.students.length} alunos`, // Nome da escola com o número de alunos
       students: school.students
     }));
-  
+
     setSchools(schoolsWithStudentCount);
     setFullList('');
   };
-  
+
 
 
 
@@ -211,10 +212,10 @@ function App() {
     if (schoolName.startsWith('UNIFIP')) {
       return;  // Não permite que UNIFIP seja manualmente selecionada ou desmarcada
     }
-  
+
     // Extrai o nome da escola sem a quantidade de alunos
     const schoolWithoutCount = schoolName.split(' - ')[0];
-  
+
     // Verifica se a escola já foi selecionada
     if (selectedSchools.includes(schoolWithoutCount)) {
       // Se estiver selecionada, desmarque-a (remova da lista)
@@ -224,7 +225,7 @@ function App() {
       setSelectedSchools(prev => [...prev, schoolWithoutCount]);
     }
   };
-  
+
 
 
 
@@ -294,7 +295,7 @@ function App() {
       alert('Por favor, insira um número válido de assentos');
       return;
     }
-    
+
     let students: Student[] = [];
 
     // Adiciona os alunos das escolas selecionadas
@@ -317,7 +318,7 @@ function App() {
       setRemainingSeats(remainingSeats);  // Define remainingSeats no estado
     }
 
-    
+
   };
 
 
@@ -368,7 +369,7 @@ function App() {
       setUnifipStudentSearch('');  // Limpa o campo de busca
 
       // Remove as universidades selecionadas da lista de escolas disponíveis
-    setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
+      setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
 
     } else {
       alert('Selecione o número correto de alunos da UNIFIP para preencher os assentos.');
@@ -397,9 +398,13 @@ function App() {
           // Extrai escola do final: "Nome (ESCOLA)"
           const schoolMatch = raw.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
           if (schoolMatch) {
-            currentBus.students.push({ name: schoolMatch[1].trim(), school: schoolMatch[2].trim(), status: 'pending' });
+            const name = schoolMatch[1].trim();
+            const isVolta = /\bvolta\b/i.test(name);
+            currentBus.students.push({ name, school: schoolMatch[2].trim(), status: isVolta ? 'volta' : 'pending' });
           } else {
-            currentBus.students.push({ name: raw, school: '', status: 'pending' });
+            const name = raw;
+            const isVolta = /\bvolta\b/i.test(name);
+            currentBus.students.push({ name, school: '', status: isVolta ? 'volta' : 'pending' });
           }
         }
       }
@@ -415,12 +420,21 @@ function App() {
     setSelectedChamadaBus(result.length === 1 ? result[0] : null);
   };
 
-  const setStudentStatus = (studentIndex: number, status: 'present' | 'absent') => {
+  const setStudentStatus = (studentIndex: number, status: 'present' | 'absent' | 'volta' | 'relocated') => {
     if (!selectedChamadaBus) return;
     const updated = { ...selectedChamadaBus, students: selectedChamadaBus.students.map((s, i) => i === studentIndex ? { ...s, status } : s) };
     setSelectedChamadaBus(updated);
     setParsedChamadaBuses(prev => prev.map(b => b.id === updated.id ? updated : b));
     setChamadaPopupIndex(null);
+  };
+
+  const setStudentRelocated = (studentIndex: number, fromDriver: string) => {
+    if (!selectedChamadaBus) return;
+    const updated = { ...selectedChamadaBus, students: selectedChamadaBus.students.map((s, i) => i === studentIndex ? { ...s, status: 'relocated' as const, relocatedFrom: fromDriver } : s) };
+    setSelectedChamadaBus(updated);
+    setParsedChamadaBuses(prev => prev.map(b => b.id === updated.id ? updated : b));
+    setChamadaPopupIndex(null);
+    setRelocateModalIndex(null);
   };
 
   const resetChamada = () => {
@@ -435,7 +449,10 @@ function App() {
     if (!selectedChamadaBus) return;
     const header = selectedChamadaBus.name; // linha original da lista
     const lines = selectedChamadaBus.students
-      .map((s, i) => `${i + 1}. ${s.name}${s.school ? ` (${s.school})` : ''}${s.status === 'present' ? ' ✅' : s.status === 'absent' ? ' ❌' : ''}`)
+      .map((s, i) => {
+        const icon = s.status === 'present' ? ' ✅' : s.status === 'absent' ? ' ❌' : s.status === 'relocated' ? ` 🔄${s.relocatedFrom ? ` (REMANEJADO DE: ${s.relocatedFrom})` : ''}` : s.status === 'volta' ? ' 🔙' : '';
+        return `${i + 1}. ${s.name}${s.school ? ` (${s.school})` : ''}${icon}`;
+      })
       .join('\n');
     navigator.clipboard.writeText(`${header}\n\n${lines}`).then(() => {
       setChamadaCopied(true);
@@ -606,25 +623,25 @@ function App() {
 
 
               <div className="mb-4">
-  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-    Selecione as universidades
-  </label>
-  <div className="space-y-2">
-    {schools
-      .filter(school => school.name !== 'UNIFIP')  // Filtra para não incluir UNIFIP
-      .map(school => (
-        <label key={school.name} className={`flex items-center space-x-2 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-          <input
-            type="checkbox"
-            checked={selectedSchools.includes(school.name)}
-            onChange={() => toggleSchool(school.name)}
-            className={`rounded ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
-          />
-          <span>{`${school.name} - ${school.students.length} alunos`}</span>
-        </label>
-      ))}
-  </div>
-</div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Selecione as universidades
+                </label>
+                <div className="space-y-2">
+                  {schools
+                    .filter(school => school.name !== 'UNIFIP')  // Filtra para não incluir UNIFIP
+                    .map(school => (
+                      <label key={school.name} className={`flex items-center space-x-2 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedSchools.includes(school.name)}
+                          onChange={() => toggleSchool(school.name)}
+                          className={`rounded ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                        />
+                        <span>{`${school.name} - ${school.students.length} alunos`}</span>
+                      </label>
+                    ))}
+                </div>
+              </div>
 
 
 
@@ -645,22 +662,22 @@ function App() {
                 </div>
               )}
               <div className="flex space-x-4">
-  <button
-    onClick={createBus}
-    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-  >
-    <PlusCircle className="w-5 h-5" />
-    Criar Ônibus
-  </button>
+                <button
+                  onClick={createBus}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  Criar Ônibus
+                </button>
 
-  <button
-    onClick={createBusManually}
-    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
-  >
-    <PlusCircle className="w-5 h-5" />
-    Criar Ônibus Manualmente
-  </button>
-</div>
+                <button
+                  onClick={createBusManually}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  Criar Ônibus Manualmente
+                </button>
+              </div>
 
               {isManualBusCreation && remainingSeats > 0 && (
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
@@ -689,20 +706,20 @@ function App() {
                             return normalize(student).includes(normalize(unifipStudentSearch));
                           })
                           .map((student, index) => (
-                          <li key={index} className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <input
-                                type="checkbox"
-                                id={`student-search-${index}`}
-                                checked={selectedUnifipStudents.includes(student)}
-                                onChange={() => handleStudentSelection(student)}
-                                className="mr-2"
-                                disabled={selectedUnifipStudents.length >= remainingSeats && !selectedUnifipStudents.includes(student)}  // Desabilita quando as vagas são preenchidas
-                              />
-                              <label htmlFor={`student-search-${index}`} className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{student}</label>
-                            </div>
-                          </li>
-                        ))}
+                            <li key={index} className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  id={`student-search-${index}`}
+                                  checked={selectedUnifipStudents.includes(student)}
+                                  onChange={() => handleStudentSelection(student)}
+                                  className="mr-2"
+                                  disabled={selectedUnifipStudents.length >= remainingSeats && !selectedUnifipStudents.includes(student)}  // Desabilita quando as vagas são preenchidas
+                                />
+                                <label htmlFor={`student-search-${index}`} className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{student}</label>
+                              </div>
+                            </li>
+                          ))}
                       </ul>
                     </div>
 
@@ -802,9 +819,8 @@ function App() {
                 )}
                 <button
                   onClick={() => setIsChamadaHelpOpen(true)}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                    darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
                   title="Ajuda"
                 >
                   ?
@@ -857,15 +873,20 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                     <div>
                       <p className="font-semibold text-blue-500 mb-1">③ Faça a chamada de cada aluno</p>
                       <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Clique em qualquer aluno para abrir o menu de escolha. Selecione <strong>Presente</strong> ou <strong>Ausente</strong>. Clique novamente no aluno para alterar.
+                        Clique em qualquer aluno para abrir o menu com 4 opções. Clique novamente no aluno para alterar.
                       </p>
-                      <div className={`text-xs rounded-lg p-3 space-y-1.5 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                        <p className="text-green-500">✅ Fundo verde = presente</p>
-                        <p className="text-red-400">❌ Fundo vermelho = ausente</p>
-                        <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>⬜ Fundo normal = pendente (ainda não chamado)</p>
+                      <div className={`text-xs rounded-lg p-3 space-y-2 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                        <p className="text-green-500 font-medium">✅ Presente — fundo verde</p>
+                        <p className="text-red-400 font-medium">❌ Ausente — fundo vermelho</p>
+                        <p className="text-amber-400 font-medium">🔙 Volta — fundo âmbar (só vai na volta)</p>
+                        <p className="text-blue-400 font-medium">🔄 Remanejado — fundo azul (veio de outro ônibus)</p>
+                        <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>⬜ Pendente — ainda não chamado</p>
                       </div>
                       <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                        O contador no topo mostra Presentes / Ausentes / Pendentes em tempo real.
+                        <strong>Dica:</strong> alunos com a palavra "VOLTA" no nome já começam marcados com 🔙 automaticamente.
+                      </p>
+                      <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        Ao marcar como <strong>Remanejado</strong>, um modal abre para escolher de qual ônibus ele veio. O nome do motorista aparece abaixo do aluno na lista.
                       </p>
                     </div>
 
@@ -873,17 +894,17 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                     <div>
                       <p className="font-semibold text-blue-500 mb-1">④ Copie o resultado</p>
                       <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Clique em <strong>"Copiar lista"</strong> no canto do cabeçalho. Alunos pendentes saem sem ícone:
+                        Clique em <strong>"Copiar lista"</strong> no cabeçalho. Cada aluno sai com seu ícone de status:
                       </p>
                       <pre className={`text-xs rounded-lg p-3 overflow-x-auto ${darkMode ? 'bg-gray-900 text-gray-300' : 'bg-gray-50 text-gray-700'}`}>{`LISTA ÔNIBUS 01 - BAMBA - UEPB (5 VAGAS)
 
 1. Daira Eve (UEPB) ✅
-2. Mirelly Sousa (UEPB) ✅
+2. Letícia Guedes- VOLTA (UFCG) 🔙
 3. Taynara Maria (UEPB) ❌
-4. Artur Matos (UEPB)
+4. Adriana Alves (UFCG) 🔄 (REMANEJADO DE: FRANÇA)
 5. Lucas Ryan (UEPB)`}</pre>
                       <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                        ✅ = presente &nbsp;&nbsp; ❌ = ausente &nbsp;&nbsp; (sem ícone) = pendente
+                        ✅ presente &nbsp; ❌ ausente &nbsp; 🔙 volta &nbsp; 🔄 remanejado &nbsp; (sem ícone) = pendente
                       </p>
                     </div>
 
@@ -935,11 +956,10 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                     <button
                       key={bus.id}
                       onClick={() => setSelectedChamadaBus(bus)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
-                        darkMode
+                      className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${darkMode
                           ? 'border-gray-600 bg-gray-700 hover:border-blue-500 hover:bg-gray-600 text-gray-200'
                           : 'border-gray-200 bg-gray-50 hover:border-blue-400 hover:bg-blue-50 text-gray-800'
-                      }`}
+                        }`}
                     >
                       {(() => {
                         // Extrai motorista do cabeçalho: "LISTA ÔNIBUS 01 - MOTORISTA - UNIV (N VAGAS)"
@@ -974,11 +994,10 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                     </p>
                     <button
                       onClick={copyChamadaList}
-                      className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md flex-shrink-0 transition-colors ${
-                        chamadaCopied
+                      className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md flex-shrink-0 transition-colors ${chamadaCopied
                           ? 'bg-green-500 text-white'
                           : darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                      }`}
+                        }`}
                       title="Copiar lista da chamada"
                     >
                       {chamadaCopied ? (
@@ -1008,70 +1027,128 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                       {/* Item do aluno */}
                       <div
                         onClick={() => setChamadaPopupIndex(chamadaPopupIndex === index ? null : index)}
-                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer select-none transition-all ${
-                          student.status === 'present'
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer select-none transition-all ${student.status === 'present'
                             ? darkMode ? 'bg-green-900/40 border border-green-700' : 'bg-green-50 border border-green-300'
                             : student.status === 'absent'
-                            ? darkMode ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-300'
-                            : darkMode ? 'bg-gray-700 border border-gray-600 hover:border-gray-500' : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
-                        }`}
+                              ? darkMode ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-300'
+                              : student.status === 'volta'
+                                ? darkMode ? 'bg-amber-900/30 border border-amber-700' : 'bg-amber-50 border border-amber-300'
+                                : student.status === 'relocated'
+                                  ? darkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-300'
+                                  : darkMode ? 'bg-gray-700 border border-gray-600 hover:border-gray-500' : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
+                          }`}
                       >
                         {/* Ícone de status */}
                         <div className="w-6 h-6 flex items-center justify-center flex-shrink-0 text-base">
                           {student.status === 'present' && '✅'}
                           {student.status === 'absent' && '❌'}
+                          {student.status === 'volta' && '🔙'}
+                          {student.status === 'relocated' && '🔄'}
                           {student.status === 'pending' && (
                             <div className={`w-4 h-4 rounded border-2 ${darkMode ? 'border-gray-500' : 'border-gray-400'}`} />
                           )}
                         </div>
 
-                        <span className={`text-sm flex-1 ${
-                          student.status === 'present' ? darkMode ? 'text-green-300' : 'text-green-800'
-                          : student.status === 'absent' ? darkMode ? 'text-red-300' : 'text-red-700'
-                          : darkMode ? 'text-gray-300' : 'text-gray-700'
-                        }`}>
+                        <span className={`text-sm flex-1 ${student.status === 'present' ? darkMode ? 'text-green-300' : 'text-green-800'
+                            : student.status === 'absent' ? darkMode ? 'text-red-300' : 'text-red-700'
+                              : student.status === 'volta' ? darkMode ? 'text-amber-300' : 'text-amber-800'
+                                : student.status === 'relocated' ? darkMode ? 'text-blue-300' : 'text-blue-800'
+                                  : darkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}>
                           <span className={`mr-2 font-mono text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{index + 1}.</span>
-                          {student.name}
+                          <span>{student.name}</span>
+                          {student.status === 'relocated' && student.relocatedFrom && (
+                            <span className={`block text-xs mt-0.5 font-medium ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                              🔄 REMANEJADO PARA: {student.relocatedFrom}
+                            </span>
+                          )}
                         </span>
                         {student.school && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            darkMode ? 'bg-gray-600 text-gray-400' : 'bg-gray-200 text-gray-500'
-                          }`}>{student.school}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${darkMode ? 'bg-gray-600 text-gray-400' : 'bg-gray-200 text-gray-500'
+                            }`}>{student.school}</span>
                         )}
                         <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>▾</span>
                       </div>
 
                       {/* Popup de escolha */}
                       {chamadaPopupIndex === index && (
-                        <div className={`absolute left-0 right-0 z-10 mt-1 rounded-lg shadow-lg border flex overflow-hidden ${
-                          darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
-                        }`}>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setStudentStatus(index, 'present'); }}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium bg-green-500 hover:bg-green-600 text-white transition-colors"
-                          >
-                            ✅ Presente
-                          </button>
-                          <div className={`w-px ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setStudentStatus(index, 'absent'); }}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition-colors"
-                          >
-                            ❌ Ausente
-                          </button>
+                        <div className={`absolute left-0 right-0 z-10 mt-1 rounded-lg shadow-lg border overflow-hidden ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                          }`}>
+                          <div className="flex">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setStudentStatus(index, 'present'); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium bg-green-500 hover:bg-green-600 text-white transition-colors"
+                            >
+                              ✅ Presente
+                            </button>
+                            <div className={`w-px ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setStudentStatus(index, 'absent'); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium bg-red-500 hover:bg-red-600 text-white transition-colors"
+                            >
+                              ❌ Ausente
+                            </button>
+                            <div className={`w-px ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setStudentStatus(index, 'volta'); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white transition-colors"
+                            >
+                              🔙 Volta
+                            </button>
+                            <div className={`w-px ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setChamadaPopupIndex(null); setRelocateModalIndex(index); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                            >
+                              🔄 Remanejado
+                            </button>
+                          </div>
                         </div>
                       )}
                     </li>
                   ))}
                 </ul>
 
+                {/* Modal de seleção de ônibus de origem do remanejamento */}
+                {relocateModalIndex !== null && (
+                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-800'} rounded-xl shadow-2xl max-w-sm w-full`}>
+                      <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <h3 className="font-bold flex items-center gap-2">🔄 Remanejado de qual ônibus?</h3>
+                        <button onClick={() => setRelocateModalIndex(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">&times;</button>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        {parsedChamadaBuses
+                          .filter(b => b.id !== selectedChamadaBus?.id)
+                          .map(bus => {
+                            const driverMatch = bus.name.match(/LISTA\s+[ÔO]NIBUS\s+\d+\s*[-–]\s*([^-–]+)\s*[-–]/i);
+                            const driver = driverMatch ? driverMatch[1].trim() : `Ônibus ${bus.id}`;
+                            return (
+                              <button
+                                key={bus.id}
+                                onClick={() => setStudentRelocated(relocateModalIndex, driver)}
+                                className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors ${darkMode ? 'bg-gray-700 hover:bg-blue-800 text-gray-200' : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border border-gray-200 hover:border-blue-300'
+                                  }`}
+                              >
+                                <span className="font-semibold">Ônibus {String(bus.id).padStart(2, '0')} — {driver}</span>
+                                <span className={`block text-xs mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{bus.students.length} aluno{bus.students.length !== 1 ? 's' : ''}</span>
+                              </button>
+                            );
+                          })}
+                        {parsedChamadaBuses.filter(b => b.id !== selectedChamadaBus?.id).length === 0 && (
+                          <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Nenhum outro ônibus disponível na lista.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Botão voltar (quando múltiplos ônibus) */}
                 {parsedChamadaBuses.length > 1 && (
                   <button
                     onClick={() => setSelectedChamadaBus(null)}
-                    className={`mt-6 text-sm px-4 py-2 rounded-md transition-colors ${
-                      darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    className={`mt-6 text-sm px-4 py-2 rounded-md transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                   >
                     ← Voltar para seleção de ônibus
                   </button>
@@ -1099,7 +1176,7 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
               title="GitHub"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
               </svg>
               GitHub
             </a>
@@ -1111,7 +1188,7 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
               title="LinkedIn"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
               </svg>
               LinkedIn
             </a>
