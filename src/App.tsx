@@ -663,7 +663,7 @@ function App() {
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
                   <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-6 max-w-lg w-full shadow-xl`}>
                     <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
-                      Selecione os alunos da UNIFIP para preencher os assentos restantes ({remainingSeats} vagas restantes)
+                      Selecione os alunos da UNIFIP para preencher os assentos restantes ({remainingSeats - selectedUnifipStudents.length} vagas restantes)
                     </h2>
 
                     {/* Campo de busca */}
