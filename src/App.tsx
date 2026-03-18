@@ -957,8 +957,8 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                       key={bus.id}
                       onClick={() => setSelectedChamadaBus(bus)}
                       className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${darkMode
-                          ? 'border-gray-600 bg-gray-700 hover:border-blue-500 hover:bg-gray-600 text-gray-200'
-                          : 'border-gray-200 bg-gray-50 hover:border-blue-400 hover:bg-blue-50 text-gray-800'
+                        ? 'border-gray-600 bg-gray-700 hover:border-blue-500 hover:bg-gray-600 text-gray-200'
+                        : 'border-gray-200 bg-gray-50 hover:border-blue-400 hover:bg-blue-50 text-gray-800'
                         }`}
                     >
                       {(() => {
@@ -995,8 +995,8 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                     <button
                       onClick={copyChamadaList}
                       className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md flex-shrink-0 transition-colors ${chamadaCopied
-                          ? 'bg-green-500 text-white'
-                          : darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        ? 'bg-green-500 text-white'
+                        : darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                         }`}
                       title="Copiar lista da chamada"
                     >
@@ -1028,14 +1028,14 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                       <div
                         onClick={() => setChamadaPopupIndex(chamadaPopupIndex === index ? null : index)}
                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer select-none transition-all ${student.status === 'present'
-                            ? darkMode ? 'bg-green-900/40 border border-green-700' : 'bg-green-50 border border-green-300'
-                            : student.status === 'absent'
-                              ? darkMode ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-300'
-                              : student.status === 'volta'
-                                ? darkMode ? 'bg-amber-900/30 border border-amber-700' : 'bg-amber-50 border border-amber-300'
-                                : student.status === 'relocated'
-                                  ? darkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-300'
-                                  : darkMode ? 'bg-gray-700 border border-gray-600 hover:border-gray-500' : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
+                          ? darkMode ? 'bg-green-900/40 border border-green-700' : 'bg-green-50 border border-green-300'
+                          : student.status === 'absent'
+                            ? darkMode ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-300'
+                            : student.status === 'volta'
+                              ? darkMode ? 'bg-amber-900/30 border border-amber-700' : 'bg-amber-50 border border-amber-300'
+                              : student.status === 'relocated'
+                                ? darkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-300'
+                                : darkMode ? 'bg-gray-700 border border-gray-600 hover:border-gray-500' : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
                           }`}
                       >
                         {/* Ícone de status */}
@@ -1050,10 +1050,10 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                         </div>
 
                         <span className={`text-sm flex-1 ${student.status === 'present' ? darkMode ? 'text-green-300' : 'text-green-800'
-                            : student.status === 'absent' ? darkMode ? 'text-red-300' : 'text-red-700'
-                              : student.status === 'volta' ? darkMode ? 'text-amber-300' : 'text-amber-800'
-                                : student.status === 'relocated' ? darkMode ? 'text-blue-300' : 'text-blue-800'
-                                  : darkMode ? 'text-gray-300' : 'text-gray-700'
+                          : student.status === 'absent' ? darkMode ? 'text-red-300' : 'text-red-700'
+                            : student.status === 'volta' ? darkMode ? 'text-amber-300' : 'text-amber-800'
+                              : student.status === 'relocated' ? darkMode ? 'text-blue-300' : 'text-blue-800'
+                                : darkMode ? 'text-gray-300' : 'text-gray-700'
                           }`}>
                           <span className={`mr-2 font-mono text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{index + 1}.</span>
                           <span>{student.name}</span>
@@ -1114,7 +1114,7 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-800'} rounded-xl shadow-2xl max-w-sm w-full`}>
                       <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                        <h3 className="font-bold flex items-center gap-2">🔄 Remanejado de qual ônibus?</h3>
+                        <h3 className="font-bold flex items-center gap-2">🔄 Remanejado para qual ônibus?</h3>
                         <button onClick={() => setRelocateModalIndex(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">&times;</button>
                       </div>
                       <div className="p-3 space-y-2">
