@@ -1,11 +1,11 @@
 /* eslint-disable prefer-const */
 import React, { useState } from 'react';
-import { PlusCircle, Bus, School as SchoolIcon, List, Copy, Check } from 'lucide-react';
+import { PlusCircle, Bus, School as SchoolIcon, List, Copy, Check, ClipboardList } from 'lucide-react';
 import { School, Student, Bus as BusType } from './types';
 import { TutorialModal } from './components/TutorialModal';
 
 function App() {
-  const [view, setView] = useState<'input' | 'management'>('input');
+  const [view, setView] = useState<'input' | 'management' | 'chamada'>('input');
   const [schools, setSchools] = useState<School[]>([]);
   const [fullList, setFullList] = useState('');
   const [buses, setBuses] = useState<BusType[]>([]);
@@ -22,6 +22,14 @@ function App() {
   const [remainingSeats, setRemainingSeats] = useState<number>(0);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [unifipStudentSearch, setUnifipStudentSearch] = useState('');
+
+  // --- Estados da Chamada ---
+  const [chamadaRawList, setChamadaRawList] = useState('');
+  interface ChamadaBus { id: number; name: string; students: { name: string; school: string; present: boolean }[] }
+  const [parsedChamadaBuses, setParsedChamadaBuses] = useState<ChamadaBus[]>([]);
+  const [selectedChamadaBus, setSelectedChamadaBus] = useState<ChamadaBus | null>(null);
+  const [chamadaCopied, setChamadaCopied] = useState(false);
+  const [isChamadaHelpOpen, setIsChamadaHelpOpen] = useState(false);
   
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -366,9 +374,71 @@ function App() {
     }
   };
 
+  // --- Parser da lista formatada para a Chamada ---
+  const parseChamadaList = (text: string): ChamadaBus[] => {
+    const buses: ChamadaBus[] = [];
+    let currentBus: ChamadaBus | null = null;
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
+    for (const line of lines) {
+      // Detecta cabeçalho de ônibus ex: "LISTA ÔNIBUS 01 - BAMBA - UEPB (5 VAGAS)"
+      const busHeaderMatch = line.match(/LISTA\s+[ÔO]NIBUS\s+(\d+)\s*[-–]\s*(.+)/i);
+      if (busHeaderMatch) {
+        currentBus = { id: parseInt(busHeaderMatch[1]), name: line, students: [] };
+        buses.push(currentBus);
+        continue;
+      }
+      // Detecta aluno ex: "1. Daira Eve (UEPB)"
+      if (currentBus) {
+        const studentMatch = line.match(/^\d+\.\s*(.+)$/);
+        if (studentMatch) {
+          const raw = studentMatch[1].trim();
+          // Extrai escola do final: "Nome (ESCOLA)"
+          const schoolMatch = raw.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+          if (schoolMatch) {
+            currentBus.students.push({ name: schoolMatch[1].trim(), school: schoolMatch[2].trim(), present: false });
+          } else {
+            currentBus.students.push({ name: raw, school: '', present: false });
+          }
+        }
+      }
+    }
+    return buses;
+  };
 
+  const handleProcessChamada = () => {
+    if (!chamadaRawList.trim()) { alert('Cole a lista formatada antes de continuar.'); return; }
+    const result = parseChamadaList(chamadaRawList);
+    if (result.length === 0) { alert('Nenhum ônibus encontrado na lista.'); return; }
+    setParsedChamadaBuses(result);
+    setSelectedChamadaBus(result.length === 1 ? result[0] : null);
+  };
 
+  const togglePresence = (studentIndex: number) => {
+    if (!selectedChamadaBus) return;
+    const updated = { ...selectedChamadaBus, students: selectedChamadaBus.students.map((s, i) => i === studentIndex ? { ...s, present: !s.present } : s) };
+    setSelectedChamadaBus(updated);
+    setParsedChamadaBuses(prev => prev.map(b => b.id === updated.id ? updated : b));
+  };
+
+  const resetChamada = () => {
+    setChamadaRawList('');
+    setParsedChamadaBuses([]);
+    setSelectedChamadaBus(null);
+    setChamadaCopied(false);
+  };
+
+  const copyChamadaList = () => {
+    if (!selectedChamadaBus) return;
+    const header = selectedChamadaBus.name; // linha original da lista
+    const lines = selectedChamadaBus.students
+      .map((s, i) => `${i + 1}. ${s.name}${s.school ? ` (${s.school})` : ''}${s.present ? ' ✅' : ' ❌'}`)
+      .join('\n');
+    navigator.clipboard.writeText(`${header}\n\n${lines}`).then(() => {
+      setChamadaCopied(true);
+      setTimeout(() => setChamadaCopied(false), 2000);
+    });
+  };
 
   return (
     <div className={`min-h-screen p-8 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
@@ -403,30 +473,40 @@ function App() {
           Sistema de Gerenciamento de Ônibus
         </h1>
 
-        <div className={`flex gap-4 mb-8 ${darkMode ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-200'}`}>
+        <div className={`grid grid-cols-3 gap-2 mb-8 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
           <button
             onClick={() => setView('input')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md ${view === 'input'
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 rounded-md text-sm font-medium transition-colors ${view === 'input'
               ? 'bg-blue-600 text-white'
               : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
           >
-            <SchoolIcon className="w-5 h-5" />
-            Processar Lista
+            <SchoolIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="text-center leading-tight">Processar Lista</span>
           </button>
           <button
             onClick={() => setView('management')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md ${view === 'management'
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 rounded-md text-sm font-medium transition-colors ${view === 'management'
               ? 'bg-blue-600 text-white'
               : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
           >
-            <List className="w-5 h-5" />
-            Gerenciar Ônibus
+            <List className="w-4 h-4 flex-shrink-0" />
+            <span className="text-center leading-tight">Gerenciar Ônibus</span>
+          </button>
+          <button
+            onClick={() => setView('chamada')}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 rounded-md text-sm font-medium transition-colors ${view === 'chamada'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+          >
+            <ClipboardList className="w-4 h-4 flex-shrink-0" />
+            <span className="text-center leading-tight">Chamada</span>
           </button>
         </div>
 
-        {view === 'input' ? (
+        {view === 'input' && (
           <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-8`}>
             <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Copiar lista completa</h2>
 
@@ -468,7 +548,9 @@ function App() {
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {view === 'management' && (
           <>
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-8`}>
               <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Criar Novo Ônibus</h2>
@@ -693,6 +775,272 @@ function App() {
             </div>
 
           </>
+        )}
+
+        {view === 'chamada' && (
+          /* ======== VIEW CHAMADA ======== */
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-8`}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-xl font-semibold flex items-center gap-2 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                <ClipboardList className="w-6 h-6 text-blue-500" />
+                Chamada
+              </h2>
+              <div className="flex items-center gap-3">
+                {parsedChamadaBuses.length > 0 && (
+                  <button
+                    onClick={resetChamada}
+                    className="text-sm text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    Limpar e reiniciar
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsChamadaHelpOpen(true)}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                    darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="Ajuda"
+                >
+                  ?
+                </button>
+              </div>
+            </div>
+
+            {/* Modal de ajuda da Chamada */}
+            {isChamadaHelpOpen && (
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-800'} rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto`}>
+                  <div className={`sticky top-0 flex items-center justify-between p-5 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <ClipboardList className="w-5 h-5 text-blue-500" />
+                      Como usar a Chamada
+                    </h3>
+                    <button onClick={() => setIsChamadaHelpOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">&times;</button>
+                  </div>
+                  <div className="p-5 space-y-5">
+
+                    {/* Passo 1 */}
+                    <div>
+                      <p className="font-semibold text-blue-500 mb-1">① Cole a lista formatada</p>
+                      <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Copie a lista gerada pelo sistema e cole no campo de texto. O formato esperado é:
+                      </p>
+                      <pre className={`text-xs rounded-lg p-3 overflow-x-auto ${darkMode ? 'bg-gray-900 text-gray-300' : 'bg-gray-50 text-gray-700'}`}>{`LISTA 17/03/2026
+
+LISTA ÔNIBUS 01 - BAMBA - UEPB (5 VAGAS)
+
+1. Daira Eve (UEPB)
+2. Mirelly Sousa (UEPB)
+3. Taynara Maria (UEPB)
+
+LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
+
+1. Letícia Guedes (UFCG)
+2. Bruno Wolmer (UFCG)`}</pre>
+                    </div>
+
+                    {/* Passo 2 */}
+                    <div>
+                      <p className="font-semibold text-blue-500 mb-1">② Selecione o ônibus</p>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Se a lista tiver <strong>mais de um ônibus</strong>, aparecerá uma tela para escolher em qual deseja fazer a chamada. Se tiver <strong>apenas um</strong>, a chamada abre automaticamente.
+                      </p>
+                    </div>
+
+                    {/* Passo 3 */}
+                    <div>
+                      <p className="font-semibold text-blue-500 mb-1">③ Marque os presentes</p>
+                      <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Clique em qualquer aluno para marcar como <strong>presente</strong>. Clique novamente para desmarcar. O contador no topo atualiza em tempo real.
+                      </p>
+                      <div className={`text-xs rounded-lg p-3 space-y-1 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                        <p className="text-green-500">✔ Fundo verde = presente</p>
+                        <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>☐ Fundo normal = ausente</p>
+                      </div>
+                    </div>
+
+                    {/* Passo 4 */}
+                    <div>
+                      <p className="font-semibold text-blue-500 mb-1">④ Copie o resultado</p>
+                      <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Clique em <strong>"Copiar lista"</strong> no canto do cabeçalho. O texto copiado incluirá um ícone ao lado de cada aluno:
+                      </p>
+                      <pre className={`text-xs rounded-lg p-3 overflow-x-auto ${darkMode ? 'bg-gray-900 text-gray-300' : 'bg-gray-50 text-gray-700'}`}>{`LISTA ÔNIBUS 01 - BAMBA - UEPB (5 VAGAS)
+
+1. Daira Eve (UEPB) ✅
+2. Mirelly Sousa (UEPB) ✅
+3. Taynara Maria (UEPB) ❌
+4. Artur Matos (UEPB) ❌
+5. Lucas Ryan (UEPB) ❌`}</pre>
+                      <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        ✅ = presente &nbsp;&nbsp; ❌ = ausente
+                      </p>
+                    </div>
+
+                  </div>
+                  <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <button
+                      onClick={() => setIsChamadaHelpOpen(false)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
+                    >
+                      Entendido!
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PASSO 1: Colar a lista */}
+            {parsedChamadaBuses.length === 0 && (
+              <>
+                <div className="mb-4">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Cole a lista formatada aqui
+                  </label>
+                  <textarea
+                    value={chamadaRawList}
+                    onChange={e => setChamadaRawList(e.target.value)}
+                    className={`w-full p-3 border rounded-md h-64 font-mono text-sm ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+                    placeholder={`LISTA 17/03/2026\n\nLISTA ÔNIBUS 01 - BAMBA - UEPB (5 VAGAS)\n\n1. Aluno Um (UEPB)\n2. Aluno Dois (UEPB)\n...`}
+                  />
+                </div>
+                <button
+                  onClick={handleProcessChamada}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+                >
+                  <ClipboardList className="w-5 h-5" />
+                  Iniciar Chamada
+                </button>
+              </>
+            )}
+
+            {/* PASSO 2: Selecionar o ônibus (quando há mais de um) */}
+            {parsedChamadaBuses.length > 1 && !selectedChamadaBus && (
+              <div>
+                <p className={`mb-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {parsedChamadaBuses.length} ônibus encontrados. Escolha qual deseja fazer a chamada:
+                </p>
+                <div className="space-y-3">
+                  {parsedChamadaBuses.map(bus => (
+                    <button
+                      key={bus.id}
+                      onClick={() => setSelectedChamadaBus(bus)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
+                        darkMode
+                          ? 'border-gray-600 bg-gray-700 hover:border-blue-500 hover:bg-gray-600 text-gray-200'
+                          : 'border-gray-200 bg-gray-50 hover:border-blue-400 hover:bg-blue-50 text-gray-800'
+                      }`}
+                    >
+                      {(() => {
+                        // Extrai motorista do cabeçalho: "LISTA ÔNIBUS 01 - MOTORISTA - UNIV (N VAGAS)"
+                        const driverMatch = bus.name.match(/LISTA\s+[ÔO]NIBUS\s+\d+\s*[-–]\s*([^-–]+)\s*[-–]/i);
+                        const driver = driverMatch ? driverMatch[1].trim() : '';
+                        return (
+                          <span className={`font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                            <span className="text-blue-500">ÔNIBUS {String(bus.id).padStart(2, '0')}</span>
+                            {driver && <> — <span>{driver.toUpperCase()}</span></>}
+                            <span className={`ml-2 font-normal text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>— {bus.students.length} aluno{bus.students.length !== 1 ? 's' : ''}</span>
+                          </span>
+                        );
+                      })()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* PASSO 3: Lista de chamada com checkboxes */}
+            {selectedChamadaBus && (
+              <div>
+                {/* Cabeçalho */}
+                <div className={`mb-4 p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`font-semibold text-sm ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                      {(() => {
+                        const driverMatch = selectedChamadaBus.name.match(/LISTA\s+[ÔO]NIBUS\s+\d+\s*[-–]\s*([^-–]+)\s*[-–]/i);
+                        const driver = driverMatch ? driverMatch[1].trim().toUpperCase() : '';
+                        return `ÔNIBUS ${String(selectedChamadaBus.id).padStart(2, '0')}${driver ? ` — ${driver}` : ''} — ${selectedChamadaBus.students.length} aluno${selectedChamadaBus.students.length !== 1 ? 's' : ''}`;
+                      })()}
+                    </p>
+                    <button
+                      onClick={copyChamadaList}
+                      className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md flex-shrink-0 transition-colors ${
+                        chamadaCopied
+                          ? 'bg-green-500 text-white'
+                          : darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                      title="Copiar lista da chamada"
+                    >
+                      {chamadaCopied ? (
+                        <><Check className="w-3.5 h-3.5" /> Copiado!</>
+                      ) : (
+                        <><Copy className="w-3.5 h-3.5" /> Copiar lista</>
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex gap-4 mt-1 text-sm">
+                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                      Total: <strong>{selectedChamadaBus.students.length}</strong>
+                    </span>
+                    <span className="text-green-500 font-medium">
+                      Presentes: <strong>{selectedChamadaBus.students.filter(s => s.present).length}</strong>
+                    </span>
+                    <span className="text-red-400 font-medium">
+                      Ausentes: <strong>{selectedChamadaBus.students.filter(s => !s.present).length}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Lista */}
+                <ul className="space-y-2">
+                  {selectedChamadaBus.students.map((student, index) => (
+                    <li
+                      key={index}
+                      onClick={() => togglePresence(index)}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer select-none transition-all ${
+                        student.present
+                          ? darkMode ? 'bg-green-900/40 border border-green-700' : 'bg-green-50 border border-green-300'
+                          : darkMode ? 'bg-gray-700 border border-gray-600 hover:border-gray-500' : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        student.present
+                          ? 'bg-green-500 border-green-500'
+                          : darkMode ? 'border-gray-500' : 'border-gray-400'
+                      }`}>
+                        {student.present && (
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className={`text-sm flex-1 ${student.present ? darkMode ? 'text-green-300' : 'text-green-800' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <span className={`mr-2 font-mono text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{index + 1}.</span>
+                        {student.name}
+                      </span>
+                      {student.school && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          darkMode ? 'bg-gray-600 text-gray-400' : 'bg-gray-200 text-gray-500'
+                        }`}>{student.school}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Botão voltar (quando múltiplos ônibus) */}
+                {parsedChamadaBuses.length > 1 && (
+                  <button
+                    onClick={() => setSelectedChamadaBus(null)}
+                    className={`mt-6 text-sm px-4 py-2 rounded-md transition-colors ${
+                      darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    ← Voltar para seleção de ônibus
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
