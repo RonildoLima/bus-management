@@ -21,6 +21,7 @@ function App() {
   const [selectedUnifipStudents, setSelectedUnifipStudents] = useState<string[]>([]);
   const [remainingSeats, setRemainingSeats] = useState<number>(0);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [unifipStudentSearch, setUnifipStudentSearch] = useState('');
   
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -355,6 +356,7 @@ function App() {
       setDriverName('');
       setIsManualBusCreation(false);  // Fecha a tela/modal
       setSelectedUnifipStudents([]);  // Limpa a seleção de alunos da UNIFIP
+      setUnifipStudentSearch('');  // Limpa o campo de busca
 
       // Remove as universidades selecionadas da lista de escolas disponíveis
     setSchools(prev => prev.filter(school => !selectedSchools.includes(school.name)));
@@ -577,26 +579,39 @@ function App() {
 
               {isManualBusCreation && remainingSeats > 0 && (
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl">
-                    <h2 className="text-xl font-semibold mb-4">
+                  <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-6 max-w-lg w-full shadow-xl`}>
+                    <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                       Selecione os alunos da UNIFIP para preencher os assentos restantes ({remainingSeats} vagas restantes)
                     </h2>
+
+                    {/* Campo de busca */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        value={unifipStudentSearch}
+                        onChange={(e) => setUnifipStudentSearch(e.target.value)}
+                        placeholder="Buscar aluno..."
+                        className={`w-full p-2 border rounded-md ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                      />
+                    </div>
 
                     {/* Lista de alunos com scroll */}
                     <div className="max-h-60 overflow-y-auto mb-6">  {/* Controla o tamanho e rolagem */}
                       <ul className="space-y-3">
-                        {availableUnifipStudents.map((student, index) => (
+                        {availableUnifipStudents
+                          .filter(student => student.toLowerCase().includes(unifipStudentSearch.toLowerCase()))
+                          .map((student, index) => (
                           <li key={index} className="flex items-center justify-between">
                             <div className="flex items-center">
                               <input
                                 type="checkbox"
-                                id={`student-${index}`}
+                                id={`student-search-${index}`}
                                 checked={selectedUnifipStudents.includes(student)}
                                 onChange={() => handleStudentSelection(student)}
                                 className="mr-2"
                                 disabled={selectedUnifipStudents.length >= remainingSeats && !selectedUnifipStudents.includes(student)}  // Desabilita quando as vagas são preenchidas
                               />
-                              <label htmlFor={`student-${index}`} className="text-sm">{student}</label>
+                              <label htmlFor={`student-search-${index}`} className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{student}</label>
                             </div>
                           </li>
                         ))}
@@ -612,7 +627,7 @@ function App() {
                         Confirmar Seleção
                       </button>
                       <button
-                        onClick={() => setIsManualBusCreation(false)}
+                        onClick={() => { setIsManualBusCreation(false); setUnifipStudentSearch(''); }}
                         className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 w-full md:w-auto"
                       >
                         Cancelar
@@ -680,6 +695,45 @@ function App() {
           </>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className={`mt-12 py-6 border-t ${darkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+        <div className="max-w-4xl mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+          <span>
+            Desenvolvido por <span className={`font-semibold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Ronildo Lima</span>
+          </span>
+
+          {/* Links sociais */}
+          <div className="flex items-center gap-4">
+            <a
+              href="https://github.com/RonildoLima"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-1.5 transition-colors ${darkMode ? 'hover:text-white' : 'hover:text-gray-900'}`}
+              title="GitHub"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              GitHub
+            </a>
+            <a
+              href="https://www.linkedin.com/in/ronildo-lima-44618b176/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-1.5 transition-colors ${darkMode ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}
+              title="LinkedIn"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+              LinkedIn
+            </a>
+          </div>
+
+          <span>© 2025 — Direitos reservados para uso não comercial</span>
+        </div>
+      </footer>
     </div>
   );
 }
