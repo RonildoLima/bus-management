@@ -25,13 +25,14 @@ function App() {
 
   // --- Estados da Chamada ---
   const [chamadaRawList, setChamadaRawList] = useState('');
-  interface ChamadaBus { id: number; name: string; students: { name: string; school: string; status: 'pending' | 'present' | 'absent' | 'volta' | 'relocated'; relocatedFrom?: string }[] }
+  interface ChamadaBus { id: number; name: string; students: { name: string; school: string; status: 'pending' | 'present' | 'absent' | 'volta' | 'relocated'; relocatedFrom?: string; relocatedTo?: string }[] }
   const [parsedChamadaBuses, setParsedChamadaBuses] = useState<ChamadaBus[]>([]);
   const [selectedChamadaBus, setSelectedChamadaBus] = useState<ChamadaBus | null>(null);
   const [chamadaCopied, setChamadaCopied] = useState(false);
   const [isChamadaHelpOpen, setIsChamadaHelpOpen] = useState(false);
   const [chamadaPopupIndex, setChamadaPopupIndex] = useState<number | null>(null);
   const [relocateModalIndex, setRelocateModalIndex] = useState<number | null>(null);
+  const [bringModal, setBringModal] = useState<{ step: 'bus' | 'student'; sourceBusId: number | null; search: string } | null>(null);
 
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -428,9 +429,9 @@ function App() {
     setChamadaPopupIndex(null);
   };
 
-  const setStudentRelocated = (studentIndex: number, fromDriver: string) => {
+  const setStudentRelocated = (studentIndex: number, toDriver: string) => {
     if (!selectedChamadaBus) return;
-    const updated = { ...selectedChamadaBus, students: selectedChamadaBus.students.map((s, i) => i === studentIndex ? { ...s, status: 'relocated' as const, relocatedFrom: fromDriver } : s) };
+    const updated = { ...selectedChamadaBus, students: selectedChamadaBus.students.map((s, i) => i === studentIndex ? { ...s, status: 'relocated' as const, relocatedTo: toDriver, relocatedFrom: undefined } : s) };
     setSelectedChamadaBus(updated);
     setParsedChamadaBuses(prev => prev.map(b => b.id === updated.id ? updated : b));
     setChamadaPopupIndex(null);
@@ -445,12 +446,27 @@ function App() {
     setChamadaPopupIndex(null);
   };
 
+  const bringStudentFromBus = (student: { name: string; school: string }, sourceBus: { id: number; name: string }) => {
+    if (!selectedChamadaBus) return;
+    const driverMatch = sourceBus.name.match(/LISTA\s+[ÔO]NIBUS\s+\d+\s*[-–]\s*([^-–]+)\s*[-–]/i);
+    const driver = driverMatch ? driverMatch[1].trim() : `Ônibus ${sourceBus.id}`;
+    const newStudent = { ...student, status: 'relocated' as const, relocatedFrom: driver };
+    const updated = { ...selectedChamadaBus, students: [...selectedChamadaBus.students, newStudent] };
+    setSelectedChamadaBus(updated);
+    setParsedChamadaBuses(prev => prev.map(b => b.id === updated.id ? updated : b));
+    setBringModal(null);
+  };
+
   const copyChamadaList = () => {
     if (!selectedChamadaBus) return;
     const header = selectedChamadaBus.name; // linha original da lista
     const lines = selectedChamadaBus.students
       .map((s, i) => {
-        const icon = s.status === 'present' ? ' ✅' : s.status === 'absent' ? ' ❌' : s.status === 'relocated' ? ` 🔄${s.relocatedFrom ? ` (REMANEJADO DE: ${s.relocatedFrom})` : ''}` : s.status === 'volta' ? ' 🔙' : '';
+        const icon = s.status === 'present' ? ' ✅'
+          : s.status === 'absent' ? ' ❌'
+          : s.status === 'relocated'
+            ? ` 🔄${s.relocatedTo ? ` (REMANEJADO PARA: ${s.relocatedTo})` : s.relocatedFrom ? ` (REMANEJADO DE: ${s.relocatedFrom})` : ''}`
+          : s.status === 'volta' ? ' 🔙' : '';
         return `${i + 1}. ${s.name}${s.school ? ` (${s.school})` : ''}${icon}`;
       })
       .join('\n');
@@ -817,6 +833,17 @@ function App() {
                     Limpar e reiniciar
                   </button>
                 )}
+                {selectedChamadaBus && parsedChamadaBuses.length > 1 && (
+                  <button
+                    onClick={() => setBringModal({ step: 'bus', sourceBusId: null, search: '' })}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors ${
+                      darkMode ? 'bg-blue-700 text-white hover:bg-blue-600' : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                    title="Trazer aluno remanejado de outro ônibus"
+                  >
+                    🔄 Trazer Remanejado
+                  </button>
+                )}
                 <button
                   onClick={() => setIsChamadaHelpOpen(true)}
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -879,14 +906,16 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                         <p className="text-green-500 font-medium">✅ Presente — fundo verde</p>
                         <p className="text-red-400 font-medium">❌ Ausente — fundo vermelho</p>
                         <p className="text-amber-400 font-medium">🔙 Volta — fundo âmbar (só vai na volta)</p>
-                        <p className="text-blue-400 font-medium">🔄 Remanejado — fundo azul (veio de outro ônibus)</p>
+                        <p className="text-blue-400 font-medium">🔄 Remanejado — fundo azul</p>
                         <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>⬜ Pendente — ainda não chamado</p>
                       </div>
                       <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                         <strong>Dica:</strong> alunos com a palavra "VOLTA" no nome já começam marcados com 🔙 automaticamente.
                       </p>
                       <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                        Ao marcar como <strong>Remanejado</strong>, um modal abre para escolher de qual ônibus ele veio. O nome do motorista aparece abaixo do aluno na lista.
+                        Ao marcar <strong>Remanejado</strong> na lista, você abre um modal para escolher <strong>para qual ônibus</strong> ele foi.
+                        <br/>
+                        Se precisar trazer alguém de fora, clique no botão <strong className="text-blue-500">🔄 Trazer Remanejado</strong> no topo para buscar e adicionar na lista atual.
                       </p>
                     </div>
 
@@ -901,8 +930,8 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
 1. Daira Eve (UEPB) ✅
 2. Letícia Guedes- VOLTA (UFCG) 🔙
 3. Taynara Maria (UEPB) ❌
-4. Adriana Alves (UFCG) 🔄 (REMANEJADO DE: FRANÇA)
-5. Lucas Ryan (UEPB)`}</pre>
+4. Artur Matos (UEPB) 🔄 (REMANEJADO PARA: LUAN)
+5. Adriana Alves (UFCG) 🔄 (REMANEJADO DE: FRANÇA)`}</pre>
                       <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                         ✅ presente &nbsp; ❌ ausente &nbsp; 🔙 volta &nbsp; 🔄 remanejado &nbsp; (sem ícone) = pendente
                       </p>
@@ -1057,9 +1086,14 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                           }`}>
                           <span className={`mr-2 font-mono text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{index + 1}.</span>
                           <span>{student.name}</span>
+                          {student.status === 'relocated' && student.relocatedTo && (
+                            <span className={`block text-xs mt-0.5 font-medium ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                              🔄 REMANEJADO PARA: {student.relocatedTo}
+                            </span>
+                          )}
                           {student.status === 'relocated' && student.relocatedFrom && (
                             <span className={`block text-xs mt-0.5 font-medium ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                              🔄 REMANEJADO PARA: {student.relocatedFrom}
+                              🔄 REMANEJADO DE: {student.relocatedFrom}
                             </span>
                           )}
                         </span>
@@ -1139,6 +1173,93 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
                           <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Nenhum outro ônibus disponível na lista.</p>
                         )}
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Modal: Trazer aluno remanejado de outro ônibus */}
+                {bringModal && (
+                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className={`${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-800'} rounded-xl shadow-2xl max-w-sm w-full max-h-[80vh] flex flex-col`}>
+                      {/* Header */}
+                      <div className={`flex items-center justify-between p-4 border-b flex-shrink-0 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <h3 className="font-bold flex items-center gap-2">
+                          🔄 {bringModal.step === 'bus' ? 'De qual ônibus?' : 'Selecione o aluno'}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {bringModal.step === 'student' && (
+                            <button
+                              onClick={() => setBringModal({ step: 'bus', sourceBusId: null, search: '' })}
+                              className={`text-xs px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            >
+                              ← Voltar
+                            </button>
+                          )}
+                          <button onClick={() => setBringModal(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">&times;</button>
+                        </div>
+                      </div>
+
+                      {/* Passo 1: Seleção de ônibus */}
+                      {bringModal.step === 'bus' && (
+                        <div className="p-3 space-y-2 overflow-y-auto">
+                          {parsedChamadaBuses
+                            .filter(b => b.id !== selectedChamadaBus?.id)
+                            .map(bus => {
+                              const driverMatch = bus.name.match(/LISTA\s+[ÔO]NIBUS\s+\d+\s*[-–]\s*([^-–]+)\s*[-–]/i);
+                              const driver = driverMatch ? driverMatch[1].trim() : `Ônibus ${bus.id}`;
+                              return (
+                                <button
+                                  key={bus.id}
+                                  onClick={() => setBringModal({ step: 'student', sourceBusId: bus.id, search: '' })}
+                                  className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors ${
+                                    darkMode ? 'bg-gray-700 hover:bg-blue-800 text-gray-200' : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border border-gray-200 hover:border-blue-300'
+                                  }`}
+                                >
+                                  <span className="font-semibold">Ônibus {String(bus.id).padStart(2, '0')} — {driver}</span>
+                                  <span className={`block text-xs mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{bus.students.length} aluno{bus.students.length !== 1 ? 's' : ''}</span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      {/* Passo 2: Busca e seleção de aluno */}
+                      {bringModal.step === 'student' && bringModal.sourceBusId !== null && (() => {
+                        const sourceBus = parsedChamadaBuses.find(b => b.id === bringModal.sourceBusId)!;
+                        const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                        const filtered = sourceBus.students.filter(s => norm(s.name).includes(norm(bringModal.search)));
+                        return (
+                          <>
+                            <div className={`px-3 pt-3 flex-shrink-0`}>
+                              <input
+                                type="text"
+                                placeholder="Buscar aluno..."
+                                value={bringModal.search}
+                                onChange={e => setBringModal({ ...bringModal, search: e.target.value })}
+                                className={`w-full px-3 py-2 rounded-md text-sm border ${darkMode ? 'bg-gray-700 text-gray-200 border-gray-600 placeholder-gray-500' : 'bg-white text-gray-900 border-gray-300'}`}
+                                autoFocus
+                              />
+                            </div>
+                            <div className="p-3 space-y-1.5 overflow-y-auto">
+                              {filtered.length === 0 && (
+                                <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Nenhum aluno encontrado.</p>
+                              )}
+                              {filtered.map((student, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => bringStudentFromBus(student, sourceBus)}
+                                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                                    darkMode ? 'bg-gray-700 hover:bg-green-800 text-gray-200' : 'bg-gray-50 hover:bg-green-50 text-gray-700 border border-gray-200 hover:border-green-300'
+                                  }`}
+                                >
+                                  <span className="font-medium">{student.name}</span>
+                                  {student.school && <span className={`ml-2 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>({student.school})</span>}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
