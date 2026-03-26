@@ -79,14 +79,19 @@ function App() {
           if (data.contents && data.contents.startsWith('http') && !data.contents.toLowerCase().includes('error')) {
             finalUrl = data.contents;
           } else {
-            console.warn('TinyURL recusou o domínio (provavelmente por ser localhost). Usando URL gigante como fallback.');
+            throw new Error('URL recusada pelo TinyURL (ambiente local)');
           }
+        } else {
+          throw new Error('Erro na API rest');
         }
       } catch (e) {
-        console.warn('Serviço de encurtador fora do ar ou bloqueado. Usando URL padrão.', e);
+        console.warn('Serviço de encurtador fora do ar ou bloqueado.', e);
+        alert('Falha ao gerar o Link Curto. Serviço indisponível ou erro de rede, tente novamente ou use o botão Cópia padrão!');
+        setCopiedLink(null);
+        return; // Aborta a operação, impedindo colar link gigante
       }
 
-      // Mostra o Modal de Compartilhamento Direto
+      // Mostra o Modal de Compartilhamento Direto (apenas se API retornar sucesso)
       setShareModalConfig({ 
         isOpen: true, 
         url: finalUrl, 
