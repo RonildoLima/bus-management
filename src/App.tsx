@@ -5,6 +5,7 @@ import LZString from 'lz-string';
 import { School, Student, Bus as BusType } from './types';
 import { TutorialModal } from './components/TutorialModal';
 import { UpdateModal } from './components/UpdateModal';
+import { ShareModal } from './components/ShareModal';
 
 function App() {
   const [view, setView] = useState<'input' | 'management' | 'chamada'>('input');
@@ -36,6 +37,7 @@ function App() {
   const [relocateModalIndex, setRelocateModalIndex] = useState<number | null>(null);
   const [bringModal, setBringModal] = useState<{ step: 'bus' | 'student'; sourceBusId: number | null; search: string } | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [shareModalConfig, setShareModalConfig] = useState<{ isOpen: boolean, url: string, busName: string }>({ isOpen: false, url: '', busName: '' });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -84,10 +86,14 @@ function App() {
         console.warn('Serviço de encurtador fora do ar ou bloqueado. Usando URL padrão.', e);
       }
 
-      // 3. Copia a URL final (curta ou longa) para a prancheta
-      await navigator.clipboard.writeText(finalUrl);
-      setCopiedLink(id);
-      setTimeout(() => setCopiedLink(null), 2000);
+      // Mostra o Modal de Compartilhamento Direto
+      setShareModalConfig({ 
+        isOpen: true, 
+        url: finalUrl, 
+        busName: id === 'all' ? 'Todas as Listas' : id.replace('bus-', 'Ônibus ')
+      });
+      setCopiedLink(null);
+
     } catch (err) {
       alert('Erro ao gerar link. A tela pode ter travado.');
       setCopiedLink(null);
@@ -563,6 +569,13 @@ function App() {
 
       <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} darkMode={darkMode} />
       <UpdateModal darkMode={darkMode} />
+      <ShareModal 
+        isOpen={shareModalConfig.isOpen} 
+        onClose={() => setShareModalConfig(prev => ({ ...prev, isOpen: false }))}
+        url={shareModalConfig.url}
+        busName={shareModalConfig.busName}
+        darkMode={darkMode}
+      />
 
       <div className="max-w-4xl mx-auto">
         <h1 className={`text-3xl font-bold mb-8 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>

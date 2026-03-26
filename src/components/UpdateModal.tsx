@@ -40,8 +40,11 @@ export function UpdateModal({ darkMode }: UpdateModalProps) {
                 <li>Clique no novo ícone de <strong>Link</strong> próximo ao botão de Copiar em qualquer ônibus.</li>
                 <li>Ao receberem o link, os organizadores abrem o site diretamente na aba <strong>Chamada</strong> com a lista prontinha.</li>
               </ul>
+              <p className={`text-xs p-2 rounded mt-2 border ${darkMode ? 'bg-blue-900/20 border-blue-800 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
+                <strong>⏳ Observação:</strong> Como listas completas podem ser muito grandes, o sistema pode levar alguns segundos empacotando os dados na primeira vez. Aguarde o aviso de Sucesso!
+              </p>
             </div>
-            
+
             <div className={`p-4 rounded-md border-l-4 ${darkMode ? 'bg-gray-700 border-green-500' : 'bg-green-50 border-green-600'}`}>
               <p className={`font-bold text-base mb-2 flex items-center gap-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
                 🔧 Correção: Leitura com Hífen
