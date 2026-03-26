@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { PlusCircle, Bus, School as SchoolIcon, List, Copy, Check, ClipboardList } from 'lucide-react';
 import { School, Student, Bus as BusType } from './types';
 import { TutorialModal } from './components/TutorialModal';
+import { UpdateModal } from './components/UpdateModal';
 
 function App() {
   const [view, setView] = useState<'input' | 'management' | 'chamada'>('input');
@@ -502,6 +503,7 @@ function App() {
       </div>
 
       <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} darkMode={darkMode} />
+      <UpdateModal darkMode={darkMode} />
 
       <div className="max-w-4xl mx-auto">
         <h1 className={`text-3xl font-bold mb-8 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -954,9 +956,26 @@ LISTA ÔNIBUS 02 - FRANÇA - UFCG (3 VAGAS)
             {parsedChamadaBuses.length === 0 && (
               <>
                 <div className="mb-4">
-                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Cole a lista formatada aqui
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Cole a lista formatada aqui
+                    </label>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          setChamadaRawList(text);
+                        } catch (err) {
+                          alert('Erro ao colar área de transferência. Cole manualmente.');
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md transition-colors border shadow-sm font-medium ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300'}`}
+                      title="Colar da área de transferência"
+                    >
+                      <ClipboardList className="w-3.5 h-3.5 text-blue-500" />
+                      Colar
+                    </button>
+                  </div>
                   <textarea
                     value={chamadaRawList}
                     onChange={e => setChamadaRawList(e.target.value)}
