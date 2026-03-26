@@ -1,6 +1,7 @@
 /* eslint-disable prefer-const */
-import React, { useState } from 'react';
-import { PlusCircle, Bus, School as SchoolIcon, List, Copy, Check, ClipboardList } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { PlusCircle, Bus, School as SchoolIcon, List, Copy, Check, ClipboardList, Link as LinkIcon } from 'lucide-react';
+import LZString from 'lz-string';
 import { School, Student, Bus as BusType } from './types';
 import { TutorialModal } from './components/TutorialModal';
 import { UpdateModal } from './components/UpdateModal';
@@ -34,6 +35,64 @@ function App() {
   const [chamadaPopupIndex, setChamadaPopupIndex] = useState<number | null>(null);
   const [relocateModalIndex, setRelocateModalIndex] = useState<number | null>(null);
   const [bringModal, setBringModal] = useState<{ step: 'bus' | 'student'; sourceBusId: number | null; search: string } | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const data = params.get('data');
+    if (data) {
+      try {
+        const decoded = LZString.decompressFromEncodedURIComponent(data);
+        if (!decoded) throw new Error("invalid string");
+        setChamadaRawList(decoded);
+        setView('chamada');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (err) {
+        console.error('Failed to decode data from URL', err);
+        alert('Link mágico inválido ou corrompido.');
+      }
+    }
+  }, []);
+
+  const generateMagicLink = async (text: string, id: string) => {
+    try {
+      // 1. Comprime a lista inteira (o link original continua existindo)
+      const encoded = LZString.compressToEncodedURIComponent(text);
+      const fullUrl = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
+      
+      let finalUrl = fullUrl;
+      
+      try {
+        // Mostramos um estado de "carregando" visualmente se possível (opcional)
+        setCopiedLink('loading-' + id);
+        
+        // 2. Chamamos a API do TinyURL. Como APIs públicas bloqueiam chamadas diretas de Browsers (CORS),
+        // usamos o proxy gratuito allorigins para fazer a ponte de forma invisível.
+        const tinyApiUrl = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`;
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(tinyApiUrl)}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          // O TinyURL devolve "Error" se o domínio for localhost. Se for um domínio real, devolve o link curto.
+          if (data.contents && data.contents.startsWith('http') && !data.contents.toLowerCase().includes('error')) {
+            finalUrl = data.contents;
+          } else {
+            console.warn('TinyURL recusou o domínio (provavelmente por ser localhost). Usando URL gigante como fallback.');
+          }
+        }
+      } catch (e) {
+        console.warn('Serviço de encurtador fora do ar ou bloqueado. Usando URL padrão.', e);
+      }
+
+      // 3. Copia a URL final (curta ou longa) para a prancheta
+      await navigator.clipboard.writeText(finalUrl);
+      setCopiedLink(id);
+      setTimeout(() => setCopiedLink(null), 2000);
+    } catch (err) {
+      alert('Erro ao gerar link. A tela pode ter travado.');
+      setCopiedLink(null);
+    }
+  };
 
   const parseSchoolList = (text: string) => {
     const schools: School[] = [];
@@ -765,17 +824,30 @@ function App() {
             <div className="space-y-6">
               <div className="flex justify-between items-start mb-4">
                 <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Copiar lista completa</h2>
-                <button
-                  onClick={copyAllBusLists}
-                  className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'} p-2`}
-                  title="Copiar todas as listas"
-                >
-                  {copiedBusId === null ? (
-                    <Copy className="w-5 h-5" />
-                  ) : (
-                    <Check className="w-5 h-5 text-green-500" />
-                  )}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const date = new Date().toLocaleDateString('pt-BR');
+                      const text = `LISTA ${date}\n\n` + buses.map(bus => `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`).join('\n\n');
+                      generateMagicLink(text, 'all');
+                    }}
+                    className={`${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-500 hover:text-blue-600'} p-2`}
+                    title="Copiar Link Mágico"
+                  >
+                    {copiedLink === 'all' ? <Check className="w-5 h-5 text-green-500" /> : <LinkIcon className="w-5 h-5" />}
+                  </button>
+                  <button
+                    onClick={copyAllBusLists}
+                    className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'} p-2`}
+                    title="Copiar texto de todas as listas"
+                  >
+                    {copiedBusId === null ? (
+                      <Copy className="w-5 h-5" />
+                    ) : (
+                      <Check className="w-5 h-5 text-green-500" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
             <div className="space-y-6">
@@ -783,17 +855,29 @@ function App() {
                 <div key={bus.id} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
                   <div className="flex justify-between items-start mb-4">
                     <h3 className={`${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>{bus.name}</h3>
-                    <button
-                      onClick={() => copyBusList(bus)}
-                      className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'} p-2`}
-                      title="Copiar lista"
-                    >
-                      {copiedBusId === bus.id ? (
-                        <Check className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <Copy className="w-5 h-5" />
-                      )}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const text = `LISTA ÔNIBUS ${String(bus.id).padStart(2, '0')} - ${bus.name.includes(" - ") ? `${bus.name.split(" - ")[0].toUpperCase()} - ` : ''}${bus.schools.join(', ')} (${bus.seats} VAGAS)\n\n${bus.students.map((student, index) => `${index + 1}. ${student.name} (${student.school})`).join('\n')}`;
+                          generateMagicLink(text, `bus-${bus.id}`);
+                        }}
+                        className={`${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-500 hover:text-blue-600'} p-2`}
+                        title="Copiar Link Mágico"
+                      >
+                        {copiedLink === `bus-${bus.id}` ? <Check className="w-5 h-5 text-green-500" /> : <LinkIcon className="w-5 h-5" />}
+                      </button>
+                      <button
+                        onClick={() => copyBusList(bus)}
+                        className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'} p-2`}
+                        title="Copiar texto desta lista"
+                      >
+                        {copiedBusId === bus.id ? (
+                          <Check className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <Copy className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <ul className="space-y-2">
                     {bus.students.map((student, index) => (
