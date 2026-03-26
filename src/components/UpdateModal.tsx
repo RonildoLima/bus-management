@@ -8,14 +8,14 @@ export function UpdateModal({ darkMode }: UpdateModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const hasSeenModal = localStorage.getItem('hasSeenHyphenUpdateModal');
+    const hasSeenModal = localStorage.getItem('hasSeenMagicLinkUpdateModal');
     if (!hasSeenModal) {
       setIsOpen(true);
     }
   }, []);
 
   const handleClose = () => {
-    localStorage.setItem('hasSeenHyphenUpdateModal', 'true');
+    localStorage.setItem('hasSeenMagicLinkUpdateModal', 'true');
     setIsOpen(false);
   };
 
@@ -23,23 +23,38 @@ export function UpdateModal({ darkMode }: UpdateModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-      <div className={`w-full max-w-md rounded-lg shadow-xl ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
-        <div className="p-6">
+      <div className={`w-full max-w-md rounded-lg shadow-xl overflow-hidden ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
+        <div className={`p-6 max-h-[85vh] overflow-y-auto`}>
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            Atualização do Sistema
+            ✨ Atualização do Sistema
           </h2>
           <div className={`space-y-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            <p className="text-base">
-              Corrigido erro em que o sistema não identificava alunos com <strong>Número + Hífen</strong> na importação de listas:
-            </p>
-            <div className={`p-4 rounded-md font-mono text-xs ${darkMode ? 'bg-gray-900 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
-              <span className="opacity-50">Antes: apenas "5. Nome" funcionava</span>
-              <br />
-              <span className={`font-bold mt-2 inline-block ${darkMode ? 'text-green-400' : 'text-green-600'}`}>Agora suporta também:</span>
-              <br />
-              <span className={darkMode ? 'text-gray-100' : 'text-gray-900'}>27 - Anna - VOLTA (UNIFIP)</span>
+            <div className={`p-4 rounded-md border-l-4 ${darkMode ? 'bg-gray-700 border-blue-500' : 'bg-blue-50 border-blue-600'}`}>
+              <p className={`font-bold text-base mb-2 flex items-center gap-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>
+                🔗 Nova Função: Link Mágico
+              </p>
+              <p className="mb-2">
+                Agora você gera links da sua Lista e compartilha com apenas 1 clique!
+              </p>
+              <ul className="list-disc pl-4 space-y-1 mb-2">
+                <li>Clique no novo ícone de <strong>Link</strong> próximo ao botão de Copiar em qualquer ônibus.</li>
+                <li>Ao receberem o link, os organizadores abrem o site diretamente na aba <strong>Chamada</strong> com a lista prontinha.</li>
+              </ul>
             </div>
-            <p>A lista será lida perfeitamente inclusive para estudantes nomeados assim!</p>
+            
+            <div className={`p-4 rounded-md border-l-4 ${darkMode ? 'bg-gray-700 border-green-500' : 'bg-green-50 border-green-600'}`}>
+              <p className={`font-bold text-base mb-2 flex items-center gap-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                🔧 Correção: Leitura com Hífen
+              </p>
+              <p className="mb-2">
+                O aplicativo corrigiu a detecção para alunos que entram colados com número e hífen na lista.
+              </p>
+              <div className={`p-2 rounded font-mono text-xs ${darkMode ? 'bg-gray-900 border border-gray-600' : 'bg-white border border-gray-300'}`}>
+                <span className="opacity-50 line-through">Antes exigia ponto: "5. Anna"</span>
+                <br />
+                <span className={`font-bold mt-1 inline-block ${darkMode ? 'text-green-400' : 'text-green-600'}`}>Agora lê perfeitamente: "27 - Anna"</span>
+              </div>
+            </div>
           </div>
           <div className="mt-6 flex justify-end">
             <button
