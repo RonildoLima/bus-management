@@ -393,7 +393,7 @@ function App() {
       }
       // Detecta aluno ex: "1. Daira Eve (UEPB)"
       if (currentBus) {
-        const studentMatch = line.match(/^\d+\.\s*(.+)$/);
+        const studentMatch = line.match(/^\d+[\.\-\s]+(.+)$/);
         if (studentMatch) {
           const raw = studentMatch[1].trim();
           // Extrai escola do final: "Nome (ESCOLA)"
