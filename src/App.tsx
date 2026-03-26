@@ -37,7 +37,14 @@ function App() {
   const [relocateModalIndex, setRelocateModalIndex] = useState<number | null>(null);
   const [bringModal, setBringModal] = useState<{ step: 'bus' | 'student'; sourceBusId: number | null; search: string } | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
-  const [shareModalConfig, setShareModalConfig] = useState<{ isOpen: boolean, url: string, busName: string }>({ isOpen: false, url: '', busName: '' });
+  const [shareModalConfig, setShareModalConfig] = useState<{ 
+    isOpen: boolean, 
+    status: 'loading' | 'success' | 'error',
+    url: string, 
+    busName: string,
+    originalText: string,
+    id: string
+  }>({ isOpen: false, status: 'loading', url: '', busName: '', originalText: '', id: '' });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -56,53 +63,53 @@ function App() {
     }
   }, []);
 
-  const generateMagicLink = async (text: string, id: string) => {
+  const executeMagicLinkRequest = async (text: string, id: string, attempt = 1) => {
     try {
-      // 1. Comprime a lista inteira (o link original continua existindo)
       const encoded = LZString.compressToEncodedURIComponent(text);
       const fullUrl = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
       
-      let finalUrl = fullUrl;
+      const tinyApiUrl = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`;
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(tinyApiUrl)}`);
       
-      try {
-        // Mostramos um estado de "carregando" visualmente se possível (opcional)
-        setCopiedLink('loading-' + id);
-        
-        // 2. Chamamos a API do TinyURL. Como APIs públicas bloqueiam chamadas diretas de Browsers (CORS),
-        // usamos o proxy gratuito allorigins para fazer a ponte de forma invisível.
-        const tinyApiUrl = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`;
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(tinyApiUrl)}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          // O TinyURL devolve "Error" se o domínio for localhost. Se for um domínio real, devolve o link curto.
-          if (data.contents && data.contents.startsWith('http') && !data.contents.toLowerCase().includes('error')) {
-            finalUrl = data.contents;
-          } else {
-            throw new Error('URL recusada pelo TinyURL (ambiente local)');
-          }
+      if (response.ok) {
+        const data = await response.json();
+        if (data.contents && data.contents.startsWith('http') && !data.contents.toLowerCase().includes('error')) {
+          setShareModalConfig(prev => ({ 
+            ...prev, 
+            status: 'success', 
+            url: data.contents 
+          }));
+          return;
         } else {
-          throw new Error('Erro na API rest');
+          throw new Error('URL recusada pelo TinyURL (ambiente local)');
         }
-      } catch (e) {
-        console.warn('Serviço de encurtador fora do ar ou bloqueado.', e);
-        alert('Falha ao gerar o Link Curto. Serviço indisponível ou erro de rede, tente novamente ou use o botão Cópia padrão!');
-        setCopiedLink(null);
-        return; // Aborta a operação, impedindo colar link gigante
+      } else {
+        throw new Error('Erro na API rest');
       }
-
-      // Mostra o Modal de Compartilhamento Direto (apenas se API retornar sucesso)
-      setShareModalConfig({ 
-        isOpen: true, 
-        url: finalUrl, 
-        busName: id === 'all' ? 'Todas as Listas' : id.replace('bus-', 'Ônibus ')
-      });
-      setCopiedLink(null);
-
-    } catch (err) {
-      alert('Erro ao gerar link. A tela pode ter travado.');
-      setCopiedLink(null);
+    } catch (e) {
+      if (attempt < 3) {
+        console.warn(`Tentativa ${attempt} falhou, retentando...`);
+        executeMagicLinkRequest(text, id, attempt + 1);
+      } else {
+        console.warn('Serviço de encurtador fora do ar ou bloqueado.', e);
+        setShareModalConfig(prev => ({
+          ...prev,
+          status: 'error'
+        }));
+      }
     }
+  };
+
+  const generateMagicLink = (text: string, id: string) => {
+    setShareModalConfig({
+      isOpen: true,
+      status: 'loading',
+      url: '',
+      busName: id === 'all' ? 'Todas as Listas' : id.replace('bus-', 'Ônibus '),
+      originalText: text,
+      id: id
+    });
+    executeMagicLinkRequest(text, id, 1);
   };
 
   const parseSchoolList = (text: string) => {
@@ -577,6 +584,8 @@ function App() {
       <ShareModal 
         isOpen={shareModalConfig.isOpen} 
         onClose={() => setShareModalConfig(prev => ({ ...prev, isOpen: false }))}
+        onRetry={() => executeMagicLinkRequest(shareModalConfig.originalText, shareModalConfig.id, 1)}
+        status={shareModalConfig.status}
         url={shareModalConfig.url}
         busName={shareModalConfig.busName}
         darkMode={darkMode}
