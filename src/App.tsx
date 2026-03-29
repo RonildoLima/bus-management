@@ -539,11 +539,12 @@ function App() {
     if (!selectedChamadaBus) return;
     const header = selectedChamadaBus.name; // linha original da lista
     const lines = selectedChamadaBus.students
+      .filter(s => !(s.status === 'relocated' && s.relocatedTo))
       .map((s, i) => {
         const icon = s.status === 'present' ? ' ✅'
           : s.status === 'absent' ? ' ❌'
           : s.status === 'relocated'
-            ? ` 🔄${s.relocatedTo ? ` (REMANEJADO PARA: ${s.relocatedTo})` : s.relocatedFrom ? ` (REMANEJADO DE: ${s.relocatedFrom})` : ''}`
+            ? ` 🔄${s.relocatedFrom ? ` (REMANEJADO DE: ${s.relocatedFrom})` : ''}`
           : s.status === 'volta' ? ' 🔙' : '';
         return `${i + 1}. ${s.name}${s.school ? ` (${s.school})` : ''}${icon}`;
       })
